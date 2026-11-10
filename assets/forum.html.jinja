@@ -1,10 +1,10 @@
 {% extends "page.html.jinja" %}{% block body %}
 {% if view == "index" %}
 <h1>Community discussions</h1><p>Ask questions, share ideas, and help each other.</p><a class="button" href="{{ prefix }}/new">Start a discussion</a>
-<ul class="topics">{% for item in items %}<li><a href="{{ item.url }}">{{ item.title }}</a><small>{{ item.member }}</small></li>{% endfor %}</ul>
+<ul class="topics">{% for item in items %}<li><a href="{{ item.url }}">{{ item.title }}</a><small>{% if item.profile_widget %}{{ item.profile_widget | safe }}{% else %}{{ item.member }}{% endif %}</small></li>{% endfor %}</ul>
 {% elif view == "topic" %}
-<p><a href="{{ prefix }}">All discussions</a></p><h1>{{ topic_title }}</h1><div class="post-body markdown">{{ topic_html | safe }}</div>
-<h2>Replies</h2>{% for item in items %}<article><small>{{ item.member }}</small><div class="post-body markdown">{{ item.body_html | safe }}</div></article>{% endfor %}
+<p><a href="{{ prefix }}">All discussions</a></p><h1>{{ topic_title }}</h1><small>{% if topic_profile_widget %}{{ topic_profile_widget | safe }}{% else %}Member{% endif %}</small><div class="post-body markdown">{{ topic_html | safe }}</div>
+<h2>Replies</h2>{% for item in items %}<article><small>{% if item.profile_widget %}{{ item.profile_widget | safe }}{% else %}{{ item.member }}{% endif %}</small><div class="post-body markdown">{{ item.body_html | safe }}</div></article>{% endfor %}
 {% else %}<h1>Start a discussion</h1>{% endif %}
 {% if view != "index" %}
 {% if signed_in %}

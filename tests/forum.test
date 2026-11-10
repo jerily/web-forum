@@ -1,7 +1,7 @@
 package require tcltest
 package require web-forum
 namespace import ::tcltest::*
-test forum-1 {mount defaults, authenticated posting and escaped output} -setup {
+test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe output} -setup {
     set ::env(ENV) LOCAL
     set db [::web::user::connect {sqlite_path :memory:}]
     ::web::user::initdb $db
@@ -11,7 +11,7 @@ test forum-1 {mount defaults, authenticated posting and escaped output} -setup {
     set store [::web::user::create -connection $db -tenant forum-test -aead $aead -mac $mac]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
-    ::web::forum::mount $router -store $store -user $auth
+    ::web::forum::mount $router -store $store -user $auth -config {body_max_length 100}
 } -body {
     set result [list [dict get [$router dispatch {method GET path /forum} {}] statusCode] \
         [dict get [$router dispatch {method GET path /forum/new} {}] statusCode] \
@@ -22,16 +22,30 @@ test forum-1 {mount defaults, authenticated posting and escaped output} -setup {
     set csrf [::web::user::csrf_token $auth $token]
     set cookie [lindex [split [dict get [::web::user::set_cookie $auth {} $token] headers Set-Cookie] {;}] 0]
     set headers [dict create cookie $cookie content-type application/x-www-form-urlencoded]
-    set response [$router dispatch [dict create method POST path /forum/new headers $headers body "title=Topic&body=%3Cscript%3E&csrf=$csrf"] {addr test}]
+    set response [$router dispatch [dict create method POST path /forum/new headers $headers body "title=Topic&body=**Hello**%0A%0A%3Cscript%3Ealert(1)%3C%2Fscript%3E&csrf=$csrf"] {addr test}]
     lappend result [dict get $response statusCode]
     set location [dict get $response headers location]
     set response [$router dispatch [dict create method GET path $location] {}]
-    lappend result [expr {[string first {&lt;script&gt;} [dict get $response body]] >= 0}]
+    lappend result [expr {[string first {<strong>Hello</strong>} [dict get $response body]] >= 0 && [string first {<script>alert} [dict get $response body]] < 0}]
+    set editor [$router dispatch [dict create method GET path /forum/new headers $headers] {}]
+    lappend result [expr {[string first data-markdown-editor [dict get $editor body]] >= 0}]
+    lappend result [dict get [$router dispatch {method GET path /forum/_assets/markdown-editor.bundle.js} {}] statusCode]
+    lappend result [dict get [$router dispatch {method GET path /forum/_assets/unknown} {}] statusCode]
+    set reply [$router dispatch [dict create method POST path $location headers $headers body "body=_Reply_%20%5Bbad%5D(javascript%3Aalert(1))&csrf=$csrf"] {addr test}]
+    lappend result [dict get $reply statusCode]
+    set body [dict get [$router dispatch [dict create method GET path $location] {}] body]
+    lappend result [expr {[string first {<em>Reply</em>} $body] >= 0 && [string first {href="javascript:} $body] < 0}]
+    set oversized [string repeat x 101]
+    set rejected [$router dispatch [dict create method POST path $location headers $headers body "body=$oversized&csrf=$csrf"] {addr test}]
+    lappend result [dict get $rejected statusCode]
+    set rejected [$router dispatch [dict create method POST path $location headers $headers body "body=Reply&unexpected=field&csrf=$csrf"] {addr test}]
+    lappend result [dict get $rejected statusCode]
+    lappend result [dict get [$router dispatch {method GET path /forum/topic/invalid} {}] statusCode]
     set result
 } -cleanup {
     $router destroy
     ::tpersist::db_disconnect $db
     tink::unregister_keyset $aead
     tink::unregister_keyset $mac
-} -result {200 303 401 303 1}
+} -result {200 303 401 303 1 1 200 404 303 1 400 400 404}
 cleanupTests

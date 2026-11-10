@@ -1,0 +1,169 @@
+.markdown-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.markdown-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.markdown-editor__button,
+.markdown-editor__select {
+  min-height: 38px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  padding: 7px 10px;
+  font: inherit;
+}
+
+.markdown-editor__select {
+  width: auto;
+  min-width: 144px;
+  flex: 0 0 auto;
+}
+
+.markdown-editor__button {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.markdown-editor__button--icon {
+  width: 38px;
+  padding-inline: 7px;
+}
+
+.markdown-editor__button-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+.markdown-editor__button:hover,
+.markdown-editor__select:hover {
+  border-color: hsl(var(--ring));
+}
+
+.markdown-editor__button:disabled,
+.markdown-editor__select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.markdown-editor__button:focus-visible,
+.markdown-editor__select:focus-visible,
+.markdown-editor__surface:focus {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.markdown-editor__button--active {
+  border-color: hsl(var(--ring));
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.markdown-editor__button[data-command="bold"] {
+  font-weight: 700;
+}
+
+.markdown-editor__button[data-command="italic"] {
+  font-style: italic;
+}
+
+.markdown-editor__mode-button {
+  margin-left: auto;
+}
+
+.markdown-editor__surface {
+  min-height: 224px;
+  padding: 14px;
+  border: 1px solid hsl(var(--input));
+  border-radius: 6px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  outline: none;
+}
+
+.markdown-editor__surface[hidden],
+.markdown-editor__textarea[hidden] {
+  display: none;
+}
+
+.markdown-editor__surface > :first-child {
+  margin-top: 0;
+}
+
+.markdown-editor__surface > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-editor__paragraph {
+  margin: 0 0 12px;
+}
+
+.markdown-editor__heading {
+  margin: 0 0 13px;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.markdown-editor__heading--h1 {
+  font-size: 1.55rem;
+}
+
+.markdown-editor__heading--h2 {
+  font-size: 1.3rem;
+}
+
+.markdown-editor__heading--h3 {
+  font-size: 1.12rem;
+}
+
+.markdown-editor__list {
+  margin: 0 0 12px 20px;
+  padding-left: 16px;
+}
+
+.markdown-editor__list-item {
+  margin: 3px 0;
+}
+
+.markdown-editor__quote {
+  margin: 0 0 14px;
+  padding: 6px 0 6px 13px;
+  border-left: 3px solid hsl(var(--ring));
+  color: hsl(var(--muted-foreground));
+}
+
+.markdown-editor__link {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.markdown-editor__surface .markdown-editor__link {
+  pointer-events: none;
+}
+
+.markdown-editor__text--bold {
+  font-weight: 700;
+}
+
+.markdown-editor__text--italic {
+  font-style: italic;
+}
+
+.markdown-editor__textarea {
+  min-height: 224px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  line-height: 1.55;
+}

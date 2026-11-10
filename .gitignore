@@ -5,3 +5,4 @@ data/
 *.sqlite3*
 *.keyset
 .env
+node_modules/

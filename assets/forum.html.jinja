@@ -3,13 +3,13 @@
 <h1>Community discussions</h1><p>Ask questions, share ideas, and help each other.</p><a class="button" href="{{ prefix }}/new">Start a discussion</a>
 <ul class="topics">{% for item in items %}<li><a href="{{ item.url }}">{{ item.title }}</a><small>{{ item.member }}</small></li>{% endfor %}</ul>
 {% elif view == "topic" %}
-<p><a href="{{ prefix }}">All discussions</a></p><h1>{{ topic_title }}</h1><p class="post-body">{{ topic_body }}</p>
-<h2>Replies</h2>{% for item in items %}<article><small>{{ item.member }}</small><p class="post-body">{{ item.body }}</p></article>{% endfor %}
+<p><a href="{{ prefix }}">All discussions</a></p><h1>{{ topic_title }}</h1><div class="post-body markdown">{{ topic_html | safe }}</div>
+<h2>Replies</h2>{% for item in items %}<article><small>{{ item.member }}</small><div class="post-body markdown">{{ item.body_html | safe }}</div></article>{% endfor %}
 {% else %}<h1>Start a discussion</h1>{% endif %}
 {% if view != "index" %}
 {% if signed_in %}
 <form method="post" action="{{ action_url }}"><input type="hidden" name="csrf" value="{{ csrf }}">
-{% if view == "new" %}<label>Title <input name="title" maxlength="160" required></label>{% endif %}
-<label>Your message <textarea name="body" rows="8" maxlength="10000" required></textarea></label><button type="submit">Post</button></form>
+{% if view == "new" %}<label>Title <input name="title" maxlength="{{ title_max_length }}" required></label>{% endif %}
+<label>Your message <textarea name="body" rows="8" maxlength="{{ body_max_length }}" data-markdown-editor></textarea></label><button type="submit">Post</button></form>
 {% else %}<p><a href="{{ login_url }}">Sign in to reply</a></p>{% endif %}
 {% endif %}{% endblock %}

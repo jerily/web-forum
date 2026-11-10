@@ -10,7 +10,7 @@ Use the same account store and account mount for the forum. Initialize tables
 once through an explicit maintenance step before serving requests:
 
 ```tcl
-package require web-forum 0.1.5
+package require web-forum 0.1.6
 set router [::tpathexp::router]
 set accountStore [::web::user::create -connection $connection -config [dict create tenant mysite \
     aead $aeadHandle mac $macHandle]]
@@ -44,6 +44,11 @@ are local to the mount and validated before routes are added. The master uses
 and typed `items`. Titles are escaped. `topic_html` and `items[].body_html`
 contain cmark-gfm output with raw HTML and unsafe URLs disabled; only those
 rendered fields are marked safe. Stored Markdown is never marked safe.
+Creation times appear beside authors in UTC using semantic `<time>` elements.
+Custom templates receive `topic_created_at_datetime` and `topic_created_at_label`,
+and each item has `created_at_datetime` and `created_at_label`. The datetime is
+ISO 8601 UTC; the label is `YYYY-MM-DD HH:MM UTC`. Existing records use their
+stored creation time without a schema migration.
 The forum currently has no dynamic host-context callback.
 
 Mount the forum before catch-all routes and use a prefix that does not overlap

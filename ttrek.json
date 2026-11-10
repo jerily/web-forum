@@ -1,6 +1,6 @@
 {
   "name": "web-forum",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "scripts": {},
   "dependencies": {
     "tcl": ">=9.1.0,<10.0.0",

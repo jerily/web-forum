@@ -144,18 +144,29 @@ proc ::web::forum::request_error {message opts} {
     ::web::user::response [lindex [dict get $opts -errorcode] 2] $message {text/plain; charset=utf-8}
 }
 
+# Format stored Unix seconds in UTC, independent of the server's timezone.
+proc ::web::forum::timestamp {seconds} {
+    dict create datetime [clock format $seconds -gmt 1 -format {%Y-%m-%dT%H:%M:%SZ}] \
+        label [clock format $seconds -gmt 1 -format {%Y-%m-%d %H:%M UTC}]
+}
+
 # Build typed template data and render Markdown with raw HTML disabled.
 proc ::web::forum::render {config view current topic items request context} {
     set auth [dict get $config -user]
     set prefix [dict get $config -prefix]
     set fields [dict create title [dict get $config -config title] brand [dict get $config -config title] prefix $prefix \
-        view $view topic_title {} topic_html {} topic_profile_widget {} action_url $prefix/new login_url [dict get $auth -prefix]/login csrf {} \
+        view $view topic_title {} topic_html {} topic_profile_widget {} \
+        topic_created_at_datetime {} topic_created_at_label {} \
+        action_url $prefix/new login_url [dict get $auth -prefix]/login csrf {} \
         assets $prefix/_assets body_max_length [dict get $config -config body_max_length] title_max_length [dict get $config -config title_max_length]]
     set profiles {}
     if {$topic ne {}} {
         set author [dict get $topic author]
         dict set profiles $author [render_widget $config profile [dict create user_id $author] $request $context]
         dict set fields topic_profile_widget [dict get $profiles $author]
+        set createdAt [timestamp [dict get $topic created_at]]
+        dict set fields topic_created_at_datetime [dict get $createdAt datetime]
+        dict set fields topic_created_at_label [dict get $createdAt label]
         dict set fields topic_title [dict get $topic title]
         dict set fields topic_html [::cmark_gfm::render_gfm_html [dict get $topic body]]
         dict set fields action_url $prefix/topic/[dict get $topic id]
@@ -166,6 +177,9 @@ proc ::web::forum::render {config view current topic items request context} {
     dict set typed editing [list BOOL [expr {$current ne {} && $view ne "index"}]]
     set values {}
     foreach item $items {
+        set createdAt [timestamp [dict get $item created_at]]
+        dict set item created_at_datetime [dict get $createdAt datetime]
+        dict set item created_at_label [dict get $createdAt label]
         dict set item body_html [::cmark_gfm::render_gfm_html [dict get $item body]]
         dict set item url $prefix/topic/[dict get $item id]
         set author [dict get $item author]
@@ -203,4 +217,4 @@ proc ::web::forum::asset {request context params} {
     dict set result headers cache-control {public, max-age=3600}
     return $result
 }
-package provide web-forum 0.1.5
+package provide web-forum 0.1.6

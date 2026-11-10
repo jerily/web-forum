@@ -1,3 +1,4 @@
+/* Host theme colors are optional; fallbacks keep the editor usable on any site. */
 .markdown-editor {
   display: grid;
   gap: 8px;
@@ -13,10 +14,10 @@
 .markdown-editor__button,
 .markdown-editor__select {
   min-height: 38px;
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--border, 215 20% 65%));
   border-radius: 6px;
-  background: hsl(var(--secondary));
-  color: hsl(var(--secondary-foreground));
+  background: hsl(var(--secondary, 210 40% 96%));
+  color: hsl(var(--secondary-foreground, 222 47% 11%));
   padding: 7px 10px;
   font: inherit;
 }
@@ -48,7 +49,7 @@
 
 .markdown-editor__button:hover,
 .markdown-editor__select:hover {
-  border-color: hsl(var(--ring));
+  border-color: hsl(var(--ring, 217 91% 45%));
 }
 
 .markdown-editor__button:disabled,
@@ -59,15 +60,16 @@
 
 .markdown-editor__button:focus-visible,
 .markdown-editor__select:focus-visible,
-.markdown-editor__surface:focus {
-  outline: 2px solid hsl(var(--ring));
+.markdown-editor__surface:focus,
+.markdown-editor__textarea:focus {
+  outline: 2px solid hsl(var(--ring, 217 91% 45%));
   outline-offset: 2px;
 }
 
 .markdown-editor__button--active {
-  border-color: hsl(var(--ring));
-  background: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
+  border-color: hsl(var(--ring, 217 91% 45%));
+  background: hsl(var(--accent, 214 95% 93%));
+  color: hsl(var(--accent-foreground, 222 47% 11%));
 }
 
 .markdown-editor__button[data-command="bold"] {
@@ -82,13 +84,19 @@
   margin-left: auto;
 }
 
-.markdown-editor__surface {
+.markdown-editor__surface,
+.markdown-editor__textarea {
+  box-sizing: border-box;
+  width: 100%;
   min-height: 224px;
   padding: 14px;
-  border: 1px solid hsl(var(--input));
+  border: 1px solid hsl(var(--input, 215 16% 55%));
   border-radius: 6px;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background: hsl(var(--background, 0 0% 100%));
+  color: hsl(var(--foreground, 222 47% 11%));
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
   outline: none;
 }
 
@@ -139,12 +147,12 @@
 .markdown-editor__quote {
   margin: 0 0 14px;
   padding: 6px 0 6px 13px;
-  border-left: 3px solid hsl(var(--ring));
-  color: hsl(var(--muted-foreground));
+  border-left: 3px solid hsl(var(--ring, 217 91% 45%));
+  color: hsl(var(--muted-foreground, 215 16% 40%));
 }
 
 .markdown-editor__link {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary, 217 91% 40%));
   text-decoration: underline;
   text-underline-offset: 0.16em;
 }
@@ -162,7 +170,6 @@
 }
 
 .markdown-editor__textarea {
-  min-height: 224px;
   resize: vertical;
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   line-height: 1.55;

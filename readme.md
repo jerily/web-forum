@@ -44,3 +44,5 @@ the Markdown textarea remains usable; server validation enforces body limits.
 
 Editor build sources and Lexical/Heroicons licenses are included. Rebuild with
 `npm ci && npm run build`; installation uses the committed bundle and needs no Node.
+
+Request schemas use `topenapi` 0.2.0; see `assets/operations.json` and the mounting guide.

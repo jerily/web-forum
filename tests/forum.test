@@ -11,7 +11,7 @@ test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe
     set store [::web::user::create -connection $db -tenant forum-test -aead $aead -mac $mac]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
-    ::web::forum::mount $router -store $store -user $auth
+    ::web::forum::mount $router -store $store -user $auth -config {body_max_length 100}
 } -body {
     set result [list [dict get [$router dispatch {method GET path /forum} {}] statusCode] \
         [dict get [$router dispatch {method GET path /forum/new} {}] statusCode] \
@@ -35,11 +35,17 @@ test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe
     lappend result [dict get $reply statusCode]
     set body [dict get [$router dispatch [dict create method GET path $location] {}] body]
     lappend result [expr {[string first {<em>Reply</em>} $body] >= 0 && [string first {href="javascript:} $body] < 0}]
+    set oversized [string repeat x 101]
+    set rejected [$router dispatch [dict create method POST path $location headers $headers body "body=$oversized&csrf=$csrf"] {addr test}]
+    lappend result [dict get $rejected statusCode]
+    set rejected [$router dispatch [dict create method POST path $location headers $headers body "body=Reply&unexpected=field&csrf=$csrf"] {addr test}]
+    lappend result [dict get $rejected statusCode]
+    lappend result [dict get [$router dispatch {method GET path /forum/topic/invalid} {}] statusCode]
     set result
 } -cleanup {
     $router destroy
     ::tpersist::db_disconnect $db
     tink::unregister_keyset $aead
     tink::unregister_keyset $mac
-} -result {200 303 401 303 1 1 200 404 303 1}
+} -result {200 303 401 303 1 1 200 404 303 1 400 400 404}
 cleanupTests

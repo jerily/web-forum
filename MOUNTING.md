@@ -101,3 +101,12 @@ apply even if browser validation is bypassed. Existing plain-text bodies need no
 schema migration. Source and licenses are installed in `frontend`; rebuild using
 the included npm lockfile. Routes are registered one by one in `mount` with
 separate index, new-topic, topic/reply and asset handlers.
+
+## Request validation
+
+`assets/operations.json` contains inline OpenAPI operations for each POST form.
+Mounting applies configured limits and captures the resulting JSON. `topenapi`
+0.2.0 validates required fields, types, lengths and allowed operations after
+strict form decoding and CSRF verification. Unknown form fields are rejected.
+Authorization, password checks, MFA replay and transactions remain in the handlers.
+No credential-bearing validation diagnostics are returned to the browser.

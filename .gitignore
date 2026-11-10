@@ -1,0 +1,7 @@
+build/
+install/
+ttrek-venv/
+data/
+*.sqlite3*
+*.keyset
+.env

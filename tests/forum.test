@@ -1,0 +1,36 @@
+package require tcltest
+package require web-forum
+namespace import ::tcltest::*
+test forum-1 {mount defaults, authenticated posting and escaped output} -setup {
+    set ::env(ENV) LOCAL
+    set db [::web::user::connect {sqlite_path :memory:}]
+    ::web::user::initdb $db
+    ::web::forum::initdb $db
+    set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
+    set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
+    set store [::web::user::create -connection $db -tenant forum-test -aead $aead -mac $mac]
+    set router [tpathexp::router]
+    set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
+    ::web::forum::mount $router -store $store -user $auth
+} -body {
+    set result [list [dict get [$router dispatch {method GET path /forum} {}] statusCode] \
+        [dict get [$router dispatch {method GET path /forum/new} {}] statusCode] \
+        [dict get [$router dispatch {method POST path /forum/new} {}] statusCode]]
+    set uid [ksuid::generate_ksuid]
+    ::web::user::insert $store web_user_users [dict create id $uid email_key key email [::web::user::seal $store member@example.com [list email $uid]] password unused verified 1 mfa_secret {} last_step -1 revision 0 created_at 0]
+    set token [::web::user::new_session $store auth $uid]
+    set csrf [::web::user::csrf_token $auth $token]
+    set headers [dict create cookie [dict get $auth -cookie]=$token content-type application/x-www-form-urlencoded]
+    set response [$router dispatch [dict create method POST path /forum/new headers $headers body "title=Topic&body=%3Cscript%3E&csrf=$csrf"] {addr test}]
+    lappend result [dict get $response statusCode]
+    set location [dict get $response headers location]
+    set response [$router dispatch [dict create method GET path $location] {}]
+    lappend result [expr {[string first {&lt;script&gt;} [dict get $response body]] >= 0}]
+    set result
+} -cleanup {
+    $router destroy
+    ::tpersist::db_disconnect $db
+    tink::unregister_keyset $aead
+    tink::unregister_keyset $mac
+} -result {200 303 401 303 1}
+cleanupTests

@@ -1,10 +1,11 @@
 {
   "name": "web-forum",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "scripts": {},
   "dependencies": {
-    "tcl": ">=8.6.0,<10.0.0",
-    "web-user": "0.1.1"
+    "tcl": ">=9.1.0,<10.0.0",
+    "web-user": "0.1.2",
+    "cmark-gfm-tcl": "^0.1.0"
   },
   "devDependencies": {}
 }

@@ -10,7 +10,7 @@ Use the same account store and account mount for the forum. Initialize tables
 once through an explicit maintenance step before serving requests:
 
 ```tcl
-package require web-forum 0.1.4
+package require web-forum 0.1.5
 set router [::tpathexp::router]
 set accountStore [::web::user::create -connection $connection -config [dict create tenant mysite \
     aead $aeadHandle mac $macHandle]]
@@ -34,13 +34,13 @@ unregister the worker's handles and close its connection during shutdown.
 | `-store` | Required account store from `web-user::create`. |
 | `-user` | Required account mount from `web-user::mount`, using the same store. |
 | `-prefix` | Non-root local path, default `/forum`. |
-| `-config` | Dictionary with `prefix`, `title`, `master_template`, `templates`, typed `properties`, and limits below. |
+| `-config` | Dictionary with `prefix`, `title`, `master_template`, `templates`, typed `properties`, named `widgets` callbacks, and limits below. |
 
 `master_template` is trusted template source replacing `page.html.jinja` for this
 mount. `templates` maps template names to trusted source overrides. Overrides
 are local to the mount and validated before routes are added. The master uses
 `{% block body %}`. Templates receive `title`, `brand`, `prefix`, `view`,
-`topic_title`, `topic_html`, `action_url`, `login_url`, `csrf`, typed `signed_in`,
+`topic_title`, `topic_html`, `topic_profile_widget`, `action_url`, `login_url`, `csrf`, typed `signed_in`,
 and typed `items`. Titles are escaped. `topic_html` and `items[].body_html`
 contain cmark-gfm output with raw HTML and unsafe URLs disabled; only those
 rendered fields are marked safe. Stored Markdown is never marked safe.
@@ -76,7 +76,7 @@ Pending verification, recovery and MFA sessions do not count as signed in.
 Defaults are 160 characters per title, 10,000 per body, 100 items per list and
 30 posting attempts per account throttle window (default 15 minutes). Configure
 `title_max_length`, `body_max_length`, `page_size` and `post_limit` in `-config`. IDs use KSUIDs. Public
-author labels use a shortened user ID; email addresses are not exposed.
+author labels use the host-provided profile widget, with `Member` as the fallback.
 
 There are no edit/delete, upload, moderation, pagination or role APIs yet.
 Account setup, email delivery, session rotation and cookie configuration belong
@@ -115,3 +115,22 @@ Mounting applies configured limits and captures the resulting JSON. `topenapi`
 strict form decoding and CSRF verification. Unknown form fields are rejected.
 Authorization, password checks, MFA replay and transactions remain in the handlers.
 No credential-bearing validation diagnostics are returned to the browser.
+
+## Shared widgets
+
+`widgets` maps slot names to trusted command prefixes. The forum's `profile` slot
+calls its provider with `properties request context`, where `properties` contains
+`user_id`. Returned HTML is inserted into topic lists, topic author labels and
+replies. A repeated author is rendered once per page; there is no global cache.
+The provider owns escaping and privacy decisions. No callback means `Member`.
+
+```tcl
+set widgets [dict create profile [list ::web::user::widget $accounts profile]]
+::web::forum::mount $router -store $store -user $accounts \
+    -config [dict create widgets $widgets]
+```
+
+The [WIDGETS.md contract](https://github.com/jerily/web-user/blob/main/WIDGETS.md)
+covers provider replacement, first-name display, template overrides and upgrades.
+Custom forum templates can render `topic_profile_widget` and each item's
+`profile_widget` with `safe`; all other ordinary text fields remain escaped.

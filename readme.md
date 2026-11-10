@@ -23,11 +23,11 @@ Routes: GET `/forum` and `/forum/`; GET/POST `/forum/new`; GET/POST
 `/forum/topic/:id`. POST new requires `title body csrf`; POST reply requires
 `body csrf`. IDs use `ksuid-tcl`. Posts are limited to 10000 characters and titles
 to 160; members are limited to 30 posting attempts per 15 minutes. Public author
-labels show a shortened user ID rather than exposing email addresses. Anonymous
+labels use the host-provided profile widget, with `Member` as the fallback. Anonymous
 GET of the new-thread form redirects to login; anonymous POST is rejected.
 
 Configuration accepts `prefix`, `title`, `master_template`, named `templates`,
-typed template `properties`, `page_size` (100), `body_max_length` (10000),
+typed template `properties`, named `widgets` callbacks, `page_size` (100), `body_max_length` (10000),
 `title_max_length` (160), and `post_limit` (30). Limits above are defaults.
 The master defines `{% block body %}`. See [MOUNTING.md](MOUNTING.md) for the complete mounting contract and
 `example-community` for a host that also mounts web-wiki and web-blog.
@@ -46,3 +46,6 @@ Editor build sources and Lexical/Heroicons licenses are included. Rebuild with
 `npm ci && npm run build`; installation uses the committed bundle and needs no Node.
 
 Request schemas use `topenapi` 0.2.0; see `assets/operations.json` and the mounting guide.
+
+For reusable profile widgets, see the [widget contract](https://github.com/jerily/web-user/blob/main/WIDGETS.md)
+and the host-wiring example in [MOUNTING.md](MOUNTING.md).

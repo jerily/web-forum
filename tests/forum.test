@@ -48,4 +48,42 @@ test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe
     tink::unregister_keyset $aead
     tink::unregister_keyset $mac
 } -result {200 303 401 303 1 1 200 404 303 1 400 400 404}
+
+namespace eval ::forumtest {variable calls {}}
+proc ::forumtest::profile {properties request context} {
+    lappend ::forumtest::calls [list [dict get $properties user_id] [dict get $request path] [dict get $context marker]]
+    return {<span class="custom-profile">Custom member</span>}
+}
+test forum-2 {profile provider is host supplied, receives context and renders once per author} -setup {
+
+    set ::env(ENV) LOCAL
+    set db [::web::user::connect {sqlite_path :memory:}]
+    ::web::user::initdb $db
+    ::web::forum::initdb $db
+    set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
+    set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
+    set store [::web::user::create -connection $db -tenant forum-test -aead $aead -mac $mac]
+    set router [tpathexp::router]
+    set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
+    ::web::forum::mount $router -store $store -user $auth -config [dict create body_max_length 100 widgets [dict create profile ::forumtest::profile]]
+
+    set ::forumtest::calls {}
+} -body {
+    set uid [ksuid::generate_ksuid]
+    set topicId [ksuid::generate_ksuid]
+    ::web::user::insert $store web_forum_topics [dict create id $topicId author $uid title Topic body Body created_at 1]
+    foreach body {First Second} {
+        ::web::user::insert $store web_forum_replies [dict create id [ksuid::generate_ksuid] author $uid topic $topicId body $body created_at 2]
+    }
+    set path /forum/topic/$topicId
+    set response [$router dispatch [dict create method GET path $path] {marker passed}]
+    list [dict get $response statusCode] [llength $::forumtest::calls] \
+        [expr {[lindex $::forumtest::calls 0] eq [list $uid $path passed]}] \
+        [regexp -all {<span class="custom-profile">Custom member</span>} [dict get $response body]]
+} -cleanup {
+    $router destroy
+    ::tpersist::db_disconnect $db
+    tink::unregister_keyset $aead
+    tink::unregister_keyset $mac
+} -result {200 1 1 3}
 cleanupTests

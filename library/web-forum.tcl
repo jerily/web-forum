@@ -1,4 +1,4 @@
-package require web-user 0.1.4
+package require web-user 0.1.5
 package require cmark_gfm 0.1.0
 package require topenapi 0.2.0
 namespace eval ::web::forum {
@@ -24,7 +24,7 @@ proc ::web::forum::mount {router args} {
     variable root
     set config [::web::user::options {-store {} -user {} -prefix {} -config {}} {*}$args]
     set settings [::web::user::options {
-        prefix /forum title Forum master_template {} templates {} properties {}
+        prefix /forum title Forum master_template {} templates {} properties {} widgets {}
         page_size 100 body_max_length 10000 title_max_length 160 post_limit 30
     } {*}[dict get $config -config]]
     if {[dict get $config -store] eq {} || [dict get $config -user] eq {}} {error "-store and -user are required"}
@@ -149,9 +149,13 @@ proc ::web::forum::render {config view current topic items request context} {
     set auth [dict get $config -user]
     set prefix [dict get $config -prefix]
     set fields [dict create title [dict get $config -config title] brand [dict get $config -config title] prefix $prefix \
-        view $view topic_title {} topic_html {} action_url $prefix/new login_url [dict get $auth -prefix]/login csrf {} \
+        view $view topic_title {} topic_html {} topic_profile_widget {} action_url $prefix/new login_url [dict get $auth -prefix]/login csrf {} \
         assets $prefix/_assets body_max_length [dict get $config -config body_max_length] title_max_length [dict get $config -config title_max_length]]
+    set profiles {}
     if {$topic ne {}} {
+        set author [dict get $topic author]
+        dict set profiles $author [render_widget $config profile [dict create user_id $author] $request $context]
+        dict set fields topic_profile_widget [dict get $profiles $author]
         dict set fields topic_title [dict get $topic title]
         dict set fields topic_html [::cmark_gfm::render_gfm_html [dict get $topic body]]
         dict set fields action_url $prefix/topic/[dict get $topic id]
@@ -164,13 +168,29 @@ proc ::web::forum::render {config view current topic items request context} {
     foreach item $items {
         dict set item body_html [::cmark_gfm::render_gfm_html [dict get $item body]]
         dict set item url $prefix/topic/[dict get $item id]
-        dict set item member "Member [string range [dict get $item author] end-5 end]"
+        set author [dict get $item author]
+        if {![dict exists $profiles $author]} {
+            dict set profiles $author [render_widget $config profile [dict create user_id $author] $request $context]
+        }
+        dict set item member Member
+        dict set item profile_widget [dict get $profiles $author]
         lappend values [list M [::web::user::text_fields $item]]
     }
     dict set typed items [list L $values]
     set templates [dict get $config -templates]
-    set body [::jinja2::render [dict get $templates forum.html.jinja]         [::tjson::typed_to_json [list M $typed]] -templates $templates -path forum.html.jinja]
+    set body [::jinja2::render [dict get $templates forum.html.jinja] \
+        [::tjson::typed_to_json [list M $typed]] -templates $templates -path forum.html.jinja]
     ::web::user::response 200 $body
+}
+
+# The host binds trusted widget providers. Cache repeated authors per render above.
+# Providers own data access, escaping and markup; an unconfigured widget is empty.
+proc ::web::forum::render_widget {config name properties request context} {
+    set widgets [dict get $config -config widgets]
+    if {![dict exists $widgets $name]} {return {}}
+    set command [dict get $widgets $name]
+    if {$command eq {}} {return {}}
+    {*}$command $properties $request $context
 }
 
 # Serve only the bundled editor assets; never accept a filesystem path.
@@ -183,4 +203,4 @@ proc ::web::forum::asset {request context params} {
     dict set result headers cache-control {public, max-age=3600}
     return $result
 }
-package provide web-forum 0.1.4
+package provide web-forum 0.1.5

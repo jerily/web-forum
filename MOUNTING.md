@@ -10,7 +10,7 @@ Use the same account store and account mount for the forum. Initialize tables
 once through an explicit maintenance step before serving requests:
 
 ```tcl
-package require web-forum 0.1.3
+package require web-forum 0.1.4
 set router [::tpathexp::router]
 set accountStore [::web::user::create -connection $connection -config [dict create tenant mysite \
     aead $aeadHandle mac $macHandle]]
@@ -101,6 +101,11 @@ apply even if browser validation is bypassed. Existing plain-text bodies need no
 schema migration. Source and licenses are installed in `frontend`; rebuild using
 the included npm lockfile. Routes are registered one by one in `mount` with
 separate index, new-topic, topic/reply and asset handlers.
+
+The editor stylesheet supplies fallback colors for its border, background, text
+and focus outline. Hosts may override the HSL theme variables used in
+`assets/editor.css`; defining them is optional. Visual and source modes share
+the same visible content-area styling.
 
 ## Request validation
 

@@ -25,6 +25,7 @@ Routes: GET `/forum` and `/forum/`; GET/POST `/forum/new`; GET/POST
 to 160; members are limited to 30 posting attempts per 15 minutes. Public author
 labels use the host-provided profile widget, with `Member` as the fallback. Anonymous
 GET of the new-thread form redirects to login; anonymous POST is rejected.
+Topics, replies and discussion lists show creation dates and times in UTC.
 
 Configuration accepts `prefix`, `title`, `master_template`, named `templates`,
 typed template `properties`, named `widgets` callbacks, `page_size` (100), `body_max_length` (10000),

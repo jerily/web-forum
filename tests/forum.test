@@ -8,7 +8,7 @@ test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe
     ::web::forum::initdb $db
     set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
     set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
-    set store [::web::user::create -connection $db -tenant forum-test -aead $aead -mac $mac]
+    set store [::web::user::create -connection $db -config [dict create tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth -config {body_max_length 100}
@@ -62,7 +62,7 @@ test forum-2 {profile provider is host supplied, receives context and renders on
     ::web::forum::initdb $db
     set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
     set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
-    set store [::web::user::create -connection $db -tenant forum-test -aead $aead -mac $mac]
+    set store [::web::user::create -connection $db -config [dict create tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth -config [dict create body_max_length 100 widgets [dict create profile ::forumtest::profile]]
@@ -94,7 +94,7 @@ test forum-3 {stored creation times render in UTC on topics, replies and the dis
     ::web::forum::initdb $db
     set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
     set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
-    set store [::web::user::create -connection $db -tenant forum-test -aead $aead -mac $mac]
+    set store [::web::user::create -connection $db -config [dict create tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth

@@ -10,10 +10,10 @@ Use the same account store and account mount for the forum. Initialize tables
 once through an explicit maintenance step before serving requests:
 
 ```tcl
-package require web-forum 0.1.6
+package require web-forum 0.1.7
 set router [::tpathexp::router]
 set accountStore [::web::user::create -connection $connection -config [dict create tenant mysite \
-    aead $aeadHandle mac $macHandle]]
+    aead $aeadHandle mac $macHandle email_hash_salt $emailHashSalt]]
 ::web::user::initdb $connection
 ::web::forum::initdb $connection
 set accounts [::web::user::mount $router -store $accountStore -config [dict create prefix /user origin https://community.example master_template $master]]

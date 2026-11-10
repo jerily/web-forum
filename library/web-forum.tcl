@@ -1,4 +1,4 @@
-package require web-user 0.1.0
+package require web-user 0.1.1
 namespace eval ::web::forum {
     variable root [file dirname [file dirname [info script]]]
     namespace import ::tpersist::db_*
@@ -99,4 +99,4 @@ proc ::web::forum::dispatch {c action request context params} {
         ::web::user::response 200 [::jinja2::render [dict get $templates forum.html.jinja] [::tjson::typed_to_json [list M $typed]] -templates $templates -path forum.html.jinja]
     } trap {WEB USER} {message opts} {::web::user::response [lindex [dict get $opts -errorcode] 2] $message {text/plain; charset=utf-8}}
 }
-package provide web-forum 0.1.0
+package provide web-forum 0.1.1

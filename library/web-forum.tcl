@@ -17,6 +17,9 @@ proc ::web::forum::initdb {connection} {
         foreach {name type} $columns {dict set fields $name [dict create type $type not_null 1]}
         db_create_table $connection [db_define_table $table $fields -primary_key {tenant id}] -if_not_exists 1
     }
+    # Equality prefixes followed by the listing order allow bounded index scans.
+    db_create_index $connection web_forum_topics_recent web_forum_topics {tenant created_at id} -if_not_exists 1
+    db_create_index $connection web_forum_replies_topic_recent web_forum_replies {tenant topic created_at id} -if_not_exists 1
 }
 
 # Capture this site's settings and register each route before catch-all routes.
@@ -217,4 +220,4 @@ proc ::web::forum::asset {request context params} {
     dict set result headers cache-control {public, max-age=3600}
     return $result
 }
-package provide web-forum 0.1.8
+package provide web-forum 0.1.9

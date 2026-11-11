@@ -50,3 +50,12 @@ Request schemas use `topenapi` 0.2.0; see `assets/operations.json` and the mount
 
 For reusable profile widgets, see the [widget contract](https://github.com/jerily/web-user/blob/main/WIDGETS.md)
 and the host-wiring example in [MOUNTING.md](MOUNTING.md).
+
+## Database indexes
+
+Recent topics use `(tenant, created_at, id)`; per-topic replies use `(tenant, topic, created_at, id)`. The database scans these indexes backward for newest-first pages. Topic ID reads use the primary key.
+
+All database operations use `tpersist`. Rerun the explicit `initdb` maintenance
+operation to add these indexes to existing databases. Index creation is
+idempotent and never runs in request handlers. The example-community integration
+suite verifies the access paths with SQLite and PostgreSQL EXPLAIN plans.

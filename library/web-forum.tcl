@@ -1,4 +1,4 @@
-package require web-user 0.2.0
+package require web-user 0.2.2
 package require cmark_gfm 0.1.0
 package require topenapi 0.2.0
 namespace eval ::web::forum {
@@ -220,4 +220,4 @@ proc ::web::forum::asset {request context params} {
     dict set result headers cache-control {public, max-age=3600}
     return $result
 }
-package provide web-forum 0.1.9
+package provide web-forum 0.1.10

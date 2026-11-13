@@ -1,5 +1,7 @@
 # web-forum
 
+Licensed under the [MIT License](LICENSE).
+
 A minimal community discussion package. Public visitors can read the newest 100
 threads and latest 100 replies; authenticated members can create a thread or reply.
 Titles are escaped plain text. Bodies are stored as Markdown and rendered with

@@ -1,11 +1,12 @@
 {
   "name": "web-forum",
   "license": "MIT",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "scripts": {},
   "dependencies": {
+    "tpersist": "^0.1.4",
     "tcl": ">=9.1.0,<10.0.0",
-    "web-user": "^0.2.2",
+    "web-user": "^0.2.3",
     "cmark-gfm-tcl": "^0.1.0",
     "topenapi": "^0.2.0"
   },

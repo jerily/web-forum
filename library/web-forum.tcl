@@ -109,4 +109,4 @@ proc ::web::forum::asset {request context params} {
     return $result
 }
 foreach module {storage http render} {source [file join $::web::forum::root library $module.tcl]}
-package provide web-forum 0.2.0
+package provide web-forum 0.3.0

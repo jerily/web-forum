@@ -1,5 +1,5 @@
 package require tcltest
-package require web-forum 0.2.0
+package require web-forum 0.3.0
 namespace import ::tcltest::*
 namespace eval ::modtest {}
 proc ::modtest::setup {{settings {}}} {
@@ -14,7 +14,7 @@ proc ::modtest::setup {{settings {}}} {
     ::web::forum::mount $router -store $store -user $auth -config [dict merge {page_size 2 post_limit 100} $settings]
     variable users {}
     foreach name {member moderator outsider} {
-        set uid [ksuid::generate_ksuid]
+        set uid user_[ksuid::generate_ksuid]
         set address $name@example.com
         ::web::user::insert $store web_user_users [dict create id $uid active 1 verified 1 email_key [::web::user::email_key $store $address] email [::web::user::seal $store $address [list email $uid]] password unused mfa_secret {} last_step -1 revision 0 created_at 1]
         set token [::web::user::new_session $store auth $uid]

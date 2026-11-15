@@ -19,6 +19,6 @@ proc ::web::forum::validate_record_id {kind id} {
 # Account IDs belong to web-user, independently of forum record IDs.
 proc ::web::forum::validate_member_id {id} {
     set result [::topenapi::validate_schema [::tjson::typed_to_json [list S $id]] \
-        {{"type":"string","pattern":"^[0-9A-Za-z]{27}$"}}]
+        {{"type":"string","pattern":"^user_[0-9A-Za-z]{27}$"}}]
     if {![dict get $result valid]} {::web::user::fail 404 "Member not found."}
 }

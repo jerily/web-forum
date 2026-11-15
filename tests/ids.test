@@ -55,9 +55,10 @@ test ids-3 {member profile IDs follow web-user while resource validators reject 
     set uid [dict get $::modtest::users member id]
     set result [list [dict get [::modtest::call {} GET /forum/member/$uid] statusCode] \
         [dict get [::modtest::call {} GET /forum/member/topic_$uid] statusCode]]
+    set suffix [string range $uid 5 end]
     foreach kind {topics replies moderation} prefix {topic reply moderation} {
-        ::web::forum::validate_record_id $kind ${prefix}_$uid
-        foreach bad [list ${prefix}_short ${prefix}_${uid}0 ${prefix}_${uid}_ ${prefix}_${uid}\n [string toupper $prefix]_$uid] {
+        ::web::forum::validate_record_id $kind ${prefix}_$suffix
+        foreach bad [list ${prefix}_short ${prefix}_${suffix}0 ${prefix}_${suffix}_ ${prefix}_${suffix}\n [string toupper $prefix]_$suffix] {
             if {![catch {::web::forum::validate_record_id $kind $bad} message options]} {error "Accepted malformed ID"}
             if {[dict get $options -errorcode] ne {WEB USER 404}} {error "Wrong rejection: $options"}
         }

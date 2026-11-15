@@ -85,7 +85,7 @@ IDs use `topic_<ksuid>`, `reply_<ksuid>`, and
 `moderation_<ksuid>`, with a 27-character KSUID after the prefix. Paths and
 moderation-history topic filters require the matching resource prefix.
 Reply redirects use `#reply_<ksuid>`, matching the rendered element ID.
-Member profile URLs use the account ID supplied by `web-user`. Public
+Member profile URLs use `user_<ksuid>` account IDs supplied by `web-user`. Public
 author labels use the host-provided profile widget, with `Member` as the fallback.
 
 Groups and permissions are supplied by `web-user`; see the policy below.

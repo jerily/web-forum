@@ -1,5 +1,5 @@
 package require tcltest
-package require web-forum 0.2.0
+package require web-forum 0.3.0
 namespace import ::tcltest::*
 test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe output} -setup {
     set ::env(ENV) LOCAL
@@ -16,7 +16,7 @@ test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe
     set result [list [dict get [$router dispatch {method GET path /forum} {}] statusCode] \
         [dict get [$router dispatch {method GET path /forum/new} {}] statusCode] \
         [dict get [$router dispatch {method POST path /forum/new} {}] statusCode]]
-    set uid [ksuid::generate_ksuid]
+    set uid user_[ksuid::generate_ksuid]
     ::web::user::insert $store web_user_users [dict create id $uid active 1 email_key key email [::web::user::seal $store member@example.com [list email $uid]] password unused verified 1 mfa_secret {} last_step -1 revision 0 created_at 0]
     set token [::web::user::new_session $store auth $uid]
     set csrf [::web::user::csrf_token $auth $token]
@@ -69,7 +69,7 @@ test forum-2 {profile provider is host supplied, receives context and renders on
 
     set ::forumtest::calls {}
 } -body {
-    set uid [ksuid::generate_ksuid]
+    set uid user_[ksuid::generate_ksuid]
     set topicId [::web::forum::new_id topics]
     ::web::user::insert $store web_forum_topics [dict create id $topicId author $uid title Topic body Body created_at 1]
     foreach body {First Second} {
@@ -99,7 +99,7 @@ test forum-3 {stored creation times render in UTC on topics, replies and the dis
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth
 } -body {
-    set uid [ksuid::generate_ksuid]
+    set uid user_[ksuid::generate_ksuid]
     set topicId [::web::forum::new_id topics]
     ::web::user::insert $store web_forum_topics [dict create id $topicId author $uid title Topic body Body created_at 1735689540]
     foreach {seconds body} {1735689600 First 1735693260 Second} {

@@ -1,0 +1,67 @@
+source [file join [file dirname [info script]] support.tcl]
+
+test ids-1 {submitted topics, replies and moderation records carry their resource prefix end to end} -setup ::modtest::setup -body {
+    set posted [::modtest::call member POST /forum/new {title {A prefixed discussion} body Hello}]
+    set path [dict get $posted headers location]
+    set topicId [file tail $path]
+    set replied [::modtest::call member POST $path {body {A prefixed reply}}]
+    set replyId [lindex [split [dict get $replied headers location] #] 1]
+    set topic [::web::forum::one $::modtest::store web_forum_topics $topicId]
+    set reply [::web::forum::one $::modtest::store web_forum_replies $replyId]
+    set page [dict get [::modtest::call {} GET $path] body]
+    set moderatorPage [dict get [::modtest::call moderator GET $path] body]
+    set hidden [::modtest::action replies $replyId hide]
+    set audit [lindex [::web::user::rows $::modtest::store web_forum_moderation] 0]
+    set ids [list $topicId $replyId [dict get $audit id]]
+    foreach id $ids prefix {topic reply moderation} {
+        if {![regexp "^${prefix}_\[0-9A-Za-z\]{27}$" $id]} {error "Wrong resource ID: $id"}
+        set parts [::ksuid::ksuid_to_parts [string range $id [expr {[string length $prefix]+1}] end]]
+        if {[dict get $parts timestamp] + 1400000000 < [clock seconds] - 60} {error "Not a current KSUID"}
+    }
+    list [dict get $posted statusCode] [dict get $replied statusCode] [dict get $hidden statusCode] \
+        [expr {[dict get $reply topic] eq $topicId && [dict get $topic id] eq $topicId}] \
+        [string match "*id=\"$replyId\"*" $page] \
+        [string match "*/moderate/replies/$replyId/hide*" $moderatorPage] \
+        [expr {[dict get $audit record_id] eq $replyId && [dict get $audit topic_id] eq $topicId}] \
+        [dict get [::modtest::call moderator GET /forum/moderation/history?topic=$topicId] statusCode] \
+        [llength [lsort -unique $ids]]
+} -cleanup ::modtest::cleanup -result {303 303 303 1 1 1 1 200 3}
+
+test ids-2 {bare and mismatched forum IDs are rejected on reads, submissions and moderation filters} -setup ::modtest::setup -body {
+    set id [::modtest::topic]
+    set reply [::modtest::reply $id]
+    set bare [string range $id 6 end]
+    # A matching stored row must not make a bare ID a valid route parameter.
+    ::web::forum::insert $::modtest::store web_forum_topics [dict create id $bare author [dict get $::modtest::users member id] title Bare body Bare created_at 1]
+    set result {}
+    foreach target [list /forum/topic/$bare /forum/topic/$reply /forum/topic/topic_$id] {
+        lappend result [dict get [::modtest::call member GET $target] statusCode] \
+            [dict get [::modtest::call member POST $target {body Blocked}] statusCode]
+    }
+    foreach target [list /forum/moderate/topics/$bare/hide /forum/moderate/topics/$reply/hide /forum/moderate/replies/$id/hide] {
+        lappend result [dict get [::modtest::call moderator GET $target] statusCode] \
+            [dict get [::modtest::call moderator POST $target {reason Blocked revision 0}] statusCode]
+    }
+    foreach filter [list $bare $reply] {
+        lappend result [dict get [::modtest::call moderator GET /forum/moderation/history?topic=$filter] statusCode]
+    }
+    lappend result [llength [::web::user::rows $::modtest::store web_forum_replies]] \
+        [llength [::web::user::rows $::modtest::store web_forum_moderation]] \
+        [dict get [::web::forum::one $::modtest::store web_forum_topics $id] hidden]
+    set result
+} -cleanup ::modtest::cleanup -result {404 404 404 404 404 404 404 404 404 404 404 404 404 404 1 0 0}
+
+test ids-3 {member profile IDs follow web-user while resource validators reject malformed suffixes} -setup ::modtest::setup -body {
+    set uid [dict get $::modtest::users member id]
+    set result [list [dict get [::modtest::call {} GET /forum/member/$uid] statusCode] \
+        [dict get [::modtest::call {} GET /forum/member/topic_$uid] statusCode]]
+    foreach kind {topics replies moderation} prefix {topic reply moderation} {
+        ::web::forum::validate_record_id $kind ${prefix}_$uid
+        foreach bad [list ${prefix}_short ${prefix}_${uid}0 ${prefix}_${uid}_ ${prefix}_${uid}\n [string toupper $prefix]_$uid] {
+            if {![catch {::web::forum::validate_record_id $kind $bad} message options]} {error "Accepted malformed ID"}
+            if {[dict get $options -errorcode] ne {WEB USER 404}} {error "Wrong rejection: $options"}
+        }
+    }
+    set result
+} -cleanup ::modtest::cleanup -result {200 404}
+cleanupTests

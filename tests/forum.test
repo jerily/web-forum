@@ -70,10 +70,10 @@ test forum-2 {profile provider is host supplied, receives context and renders on
     set ::forumtest::calls {}
 } -body {
     set uid [ksuid::generate_ksuid]
-    set topicId [ksuid::generate_ksuid]
+    set topicId [::web::forum::new_id topics]
     ::web::user::insert $store web_forum_topics [dict create id $topicId author $uid title Topic body Body created_at 1]
     foreach body {First Second} {
-        ::web::user::insert $store web_forum_replies [dict create id [ksuid::generate_ksuid] author $uid topic $topicId body $body created_at 2]
+        ::web::user::insert $store web_forum_replies [dict create id [::web::forum::new_id replies] author $uid topic $topicId body $body created_at 2]
     }
     set path /forum/topic/$topicId
     set response [$router dispatch [dict create method GET path $path] {marker passed}]
@@ -100,10 +100,10 @@ test forum-3 {stored creation times render in UTC on topics, replies and the dis
     ::web::forum::mount $router -store $store -user $auth
 } -body {
     set uid [ksuid::generate_ksuid]
-    set topicId [ksuid::generate_ksuid]
+    set topicId [::web::forum::new_id topics]
     ::web::user::insert $store web_forum_topics [dict create id $topicId author $uid title Topic body Body created_at 1735689540]
     foreach {seconds body} {1735689600 First 1735693260 Second} {
-        ::web::user::insert $store web_forum_replies [dict create id [ksuid::generate_ksuid] author $uid topic $topicId body $body created_at $seconds]
+        ::web::user::insert $store web_forum_replies [dict create id [::web::forum::new_id replies] author $uid topic $topicId body $body created_at $seconds]
     }
     set body [dict get [$router dispatch [dict create method GET path /forum/topic/$topicId] {}] body]
     set times [regexp -all -inline {<time datetime="[^"]+">[^<]+</time>} $body]

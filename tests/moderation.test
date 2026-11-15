@@ -76,7 +76,7 @@ test moderation-5 {public pagination excludes private posts, handles ties and li
     for {set page 1} {$page <= 3} {incr page} {
         set response [::modtest::call {} GET /forum?page=$page]
         set html [dict get $response body]
-        set ids [regexp -all -inline {<li class="forum-post" id="reply-([A-Za-z0-9]+)"} $html]
+        set ids [regexp -all -inline {<li class="forum-post" id="((?:topic|reply)_[A-Za-z0-9]{27})"} $html]
         set members {}
         foreach {tag id} $ids {lappend seen $id; lappend members $id}
         lappend counts [llength $members]
@@ -121,7 +121,7 @@ test moderation-8 {replies paginate in chronological order and author links use 
     set counts {}
     for {set page 1} {$page <= 3} {incr page} {
         set html [dict get [::modtest::call {} GET /forum/topic/$id?page=$page] body]
-        set ids [regexp -all -inline {<li class="forum-post" id="reply-([A-Za-z0-9]+)"} $html]
+        set ids [regexp -all -inline {<li class="forum-post" id="((?:topic|reply)_[A-Za-z0-9]{27})"} $html]
         foreach {tag reply} $ids {lappend seen $reply}
         lappend counts [expr {[llength $ids] / 2}]
     }

@@ -44,12 +44,12 @@ proc ::modtest::call {who method target {fields {}} {headers {}}} {
     $::modtest::router dispatch $request {addr 127.0.0.1}
 }
 proc ::modtest::topic {{status published} {title Topic}} {
-    set id [ksuid::generate_ksuid]
+    set id [::web::forum::new_id topics]
     ::web::forum::insert $::modtest::store web_forum_topics [dict create id $id author [dict get $::modtest::users member id] title $title body {Topic body} created_at 1 status $status]
     return $id
 }
 proc ::modtest::reply {topic {status published}} {
-    set id [ksuid::generate_ksuid]
+    set id [::web::forum::new_id replies]
     ::web::forum::insert $::modtest::store web_forum_replies [dict create id $id topic $topic author [dict get $::modtest::users member id] body {Reply body} created_at 2 status $status]
     return $id
 }

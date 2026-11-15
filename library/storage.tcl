@@ -60,8 +60,14 @@ proc ::web::forum::page_rows {config table filter page {oldest 0} {sort newest}}
     set query [db_offset [db_limit $query $size] [expr {($page - 1) * $size}]]
     dict create items [dict get [db_execute $connection $query] rows] page $page pages $pages total $total
 }
-proc ::web::forum::new_entry {config current form} {
-    dict create id [::ksuid::generate_ksuid] author [dict get $current id] body [dict get $form body] \
+proc ::web::forum::id_prefix {kind} {
+    dict get {topics topic replies reply moderation moderation} $kind
+}
+proc ::web::forum::new_id {kind} {
+    return [id_prefix $kind]_[::ksuid::generate_ksuid]
+}
+proc ::web::forum::new_entry {kind config current form} {
+    dict create id [new_id $kind] author [dict get $current id] body [dict get $form body] \
         created_at [clock seconds] hidden 0 revision 0 \
         status [expr {[dict get $config -config moderation] ? "pending" : "published"}]
 }

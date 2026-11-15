@@ -10,7 +10,7 @@ Use the same account store and account mount for the forum. Initialize tables
 once through an explicit maintenance step before serving requests:
 
 ```tcl
-package require web-forum 0.1.10
+package require web-forum 0.2.0
 set router [::tpathexp::router]
 set accountStore [::web::user::create -connection $connection -config [dict create tenant mysite \
     aead $aeadHandle mac $macHandle email_hash_salt $emailHashSalt]]
@@ -67,9 +67,9 @@ credentials. Expected account/validation failures return an HTTP status.
 
 | Path | Methods | Behavior |
 | --- | --- | --- |
-| `/forum`, `/forum/` | GET/HEAD | Public list of the newest 100 threads. |
+| `/forum`, `/forum/` | GET/HEAD | Public paginated topics; `?sort=newest` (default) or `?sort=activity`. |
 | `/forum/new` | GET/HEAD, POST | New-thread form; POST requires `title body csrf`. |
-| `/forum/topic/:id` | GET/HEAD, POST | Public topic and latest 100 replies; POST requires `body csrf`. |
+| `/forum/topic/:id` | GET/HEAD, POST | Topic and chronological paginated replies; POST requires `body csrf`. |
 | `/forum/_assets/:asset` | GET/HEAD | Bundled editor CSS/JavaScript; unknown names return 404. |
 
 Paths are relative to the chosen prefix. Successful posts redirect with 303 to
@@ -78,12 +78,12 @@ login route; anonymous POST is rejected. Logged-in members may create threads
 and reply. Every POST checks the account mount's CSRF token and origin policy.
 Pending verification, recovery and MFA sessions do not count as signed in.
 
-Defaults are 160 characters per title, 10,000 per body, 100 items per list and
+Defaults are 160 characters per title, 10,000 per body, 20 items per page (maximum 100) and
 30 posting attempts per account throttle window (default 15 minutes). Configure
 `title_max_length`, `body_max_length`, `page_size` and `post_limit` in `-config`. IDs use KSUIDs. Public
 author labels use the host-provided profile widget, with `Member` as the fallback.
 
-There are no edit/delete, upload, moderation, pagination or role APIs yet.
+Groups and permissions are supplied by `web-user`; see the policy below.
 Account setup, email delivery, session rotation and cookie configuration belong
 to `web-user`; see its [mounting guide](https://github.com/jerily/web-user/blob/main/MOUNTING.md).
 
@@ -139,3 +139,75 @@ The [WIDGETS.md contract](https://github.com/jerily/web-user/blob/main/WIDGETS.m
 covers provider replacement, first-name display, template overrides and upgrades.
 Custom forum templates can render `topic_profile_widget` and each item's
 `profile_widget` with `safe`; all other ordinary text fields remain escaped.
+
+## Permissions, approval, and audit history
+
+Grant `forum.moderate` with `::web::user::sync_access`. The forum checks the
+current authenticated account for this permission on every moderation request.
+An `admin` group has only the permissions explicitly granted to it.
+
+Set `moderation true` in `-config` to hold **all** new topics and replies for
+approval. Existing published content remains visible. Authors can see their own
+pending submissions; other ordinary members cannot. Moderators can review them
+at `/forum/moderation`, with topic/reply tabs. `?state=hidden` shows hidden posts;
+`?state=rejected` shows rejected submissions. Only published, nonhidden topics
+appear in public lists and public forum profiles.
+
+`/forum/moderate/:kind/:id/:action` accepts `kind` = `topics` or `replies`.
+Actions are `approve`, `reject`, `hide`, `restore`, `lock`, and `unlock`; locking
+applies only to topics. GET displays a confirmation form; POST requires `csrf`,
+`revision`, and a nonblank `reason` (at most 500 characters). Hidden content is
+unavailable to ordinary users even by direct URL. Locked discussions reject new
+replies on the server. Moderators see only applicable action links.
+
+State changes and audit inserts commit together. Revision checks reject stale
+forms, and posting is serialized against discussion locks. History records the
+moderator account ID, UTC timestamp, target, action, before/after states and
+reason. `/forum/moderation/history` is moderator-only and can filter `?topic=id`.
+The package exposes no edit or deletion API for these records.
+
+## Pagination and profiles
+
+`?page=2` selects the next page. Lists, replies, queues, profiles and history all
+use bounded SQL queries and counts with the same visibility filters. Sorting is
+stable using creation time and ID; activity order uses the newest visible reply
+creation time, falling back to topic creation. Hiding, restoring and approving
+replies recomputes activity. The sort choice is retained in pagination links.
+
+Author labels link to `/forum/member/:id`. The profile shows the account's public
+name/handle and published discussions. Email and private profile fields are never
+included. The provider widget still controls the author label's markup.
+
+## Posting CAPTCHA
+
+Set `posting_captcha true` in `-config` to require `tcaptcha` for both new topics
+and replies. The default is false. The forum reuses `web-user`'s expiring,
+single-use challenge store, binding each challenge to the tenant, account mount,
+forum mount, action, discussion path and browser session. Wrong, expired,
+replayed or cross-session challenges cannot save a post. Checks happen after
+CSRF validation and before the content transaction. Account settings
+`captcha_ttl`, `captcha_length`, `captcha_letters`, `challenge_limit` and
+`browse_limit` control challenge generation and throttling. Moderation actions
+do not require a posting CAPTCHA.
+
+## Styles and local images
+
+The forum body loads `{{ assets }}/forum.css`, so its spacing and cards work
+with a custom master too. Styles are scoped beneath `.web-forum`. Hosts still
+load the editor CSS and JavaScript when `editing` is true.
+
+The optional `render_markdown` setting is a trusted command prefix accepting
+Markdown and returning safe HTML. Bind `::web::static::wiki::render_content` to
+an `image_store` to share the site's local images. It validates submissions
+before saving. Expected renderer errors use `{WEB CONTENT status}`. The host
+serves the inventory with the static package's `serve_image` handler.
+
+Run `initdb` explicitly before using the new schema. It adds state, audit and
+activity columns/indexes without changing stored message bodies; existing
+content defaults to published and visible. Neither mounting nor requests create
+schema. Activity is maintained in posting/moderation transactions.
+
+The main `forum.html.jinja` template composes literal includes from `assets/forum/`.
+Hosts can override individual entries such as `forum/posts.html.jinja` or
+`forum/compose.html.jinja` through the mount's `templates` dictionary. All bundled
+partials and overrides are validated together before routes are registered.

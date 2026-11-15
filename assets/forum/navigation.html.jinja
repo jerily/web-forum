@@ -1,0 +1,4 @@
+  <nav class="forum-nav" aria-label="Forum navigation">
+    <a href="{{ prefix }}">All discussions</a>
+    {% if can_moderate %}<a href="{{ prefix }}/moderation">Pending moderation</a><a href="{{ prefix }}/moderation?state=hidden">Hidden posts</a><a href="{{ prefix }}/moderation/history">Moderation history</a>{% endif %}
+  </nav>

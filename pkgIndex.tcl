@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: MIT.
 
 # Register the package and load its dependencies.
-package ifneeded web-forum 0.1.11 [list source [file join $dir library web-forum.tcl]]
+package ifneeded web-forum 0.2.0 [list source [file join $dir library web-forum.tcl]]

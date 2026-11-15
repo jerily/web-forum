@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "tables": [
+    {
+      "name": "web_forum_topics",
+      "columns": {
+        "tenant": {
+          "type": "text",
+          "not_null": true
+        },
+        "id": {
+          "type": "text",
+          "not_null": true
+        },
+        "author": {
+          "type": "text",
+          "not_null": true
+        },
+        "title": {
+          "type": "text",
+          "not_null": true
+        },
+        "body": {
+          "type": "text",
+          "not_null": true
+        },
+        "created_at": {
+          "type": "bigint",
+          "not_null": true
+        }
+      },
+      "primary_key": [
+        "tenant",
+        "id"
+      ],
+      "indexes": [
+        {
+          "name": "web_forum_topics_recent",
+          "columns": [
+            "tenant",
+            "created_at",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "web_forum_replies",
+      "columns": {
+        "tenant": {
+          "type": "text",
+          "not_null": true
+        },
+        "id": {
+          "type": "text",
+          "not_null": true
+        },
+        "topic": {
+          "type": "text",
+          "not_null": true
+        },
+        "author": {
+          "type": "text",
+          "not_null": true
+        },
+        "body": {
+          "type": "text",
+          "not_null": true
+        },
+        "created_at": {
+          "type": "bigint",
+          "not_null": true
+        }
+      },
+      "primary_key": [
+        "tenant",
+        "id"
+      ],
+      "indexes": [
+        {
+          "name": "web_forum_replies_topic_recent",
+          "columns": [
+            "tenant",
+            "topic",
+            "created_at",
+            "id"
+          ]
+        }
+      ]
+    }
+  ]
+}

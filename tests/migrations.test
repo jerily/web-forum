@@ -1,0 +1,18 @@
+package require tcltest
+package require web-forum 0.2.0
+namespace import ::tcltest::*
+test forum-schema-1 {additive initialization preserves discussion content and defaults it to visible} -setup {
+    set db [::tpersist::db_connect -database :memory: -autobegin false]
+    ::tpersist::db_apply_schema $db [file join [file dirname [info script]] sql forum-original.json]
+    set store [dict create -connection $db -tenant upgrade]
+    ::web::user::insert $store web_forum_topics {id existing author member title Original body Preserved created_at 1}
+    ::web::forum::insert $store web_forum_replies {id reply topic existing author member body Reply created_at 2}
+} -body {
+    ::web::forum::initdb $db
+    ::web::forum::initdb $db
+    set topic [::web::forum::one $store web_forum_topics existing]
+    set reply [::web::forum::one $store web_forum_replies reply]
+    list [dict get $topic body] [dict get $topic status] [dict get $topic hidden] [dict get $topic locked] \
+        [dict get $reply body] [dict get $reply status] [dict get $reply hidden]
+} -cleanup {::tpersist::db_disconnect $db} -result {Preserved published 0 0 Reply published 0}
+cleanupTests

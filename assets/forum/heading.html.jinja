@@ -1,0 +1,15 @@
+  {% if view == "index" %}
+  <header class="forum-heading"><div><p class="forum-eyebrow">A place to talk</p><h1>{{ brand }}</h1><p>Ask a question, share something useful, or join a conversation.</p></div><a class="forum-button" href="{{ prefix }}/new">Start a discussion</a></header>
+  <nav class="forum-tabs" aria-label="Sort discussions"><a href="{{ prefix }}?sort=newest"{% if sort == "newest" %} aria-current="page"{% endif %}>Newest topics</a><a href="{{ prefix }}?sort=activity"{% if sort == "activity" %} aria-current="page"{% endif %}>Latest activity</a></nav>
+  {% elif view == "profile" %}
+  <header class="forum-heading"><div><p class="forum-eyebrow">Community member</p><h1>{{ profile_name }}</h1>{% if profile_username %}<p>@{{ profile_username }}</p>{% endif %}<h2>Discussions started</h2></div></header>
+  {% elif view == "queue" %}
+  <header class="forum-heading"><div><p class="forum-eyebrow">Moderator workspace</p><h1>{% if queue_state == "pending" %}Pending moderation{% elif queue_state == "hidden" %}Hidden posts{% else %}Rejected submissions{% endif %}</h1><p>Review each contribution before deciding what happens next.</p></div></header>
+  <nav class="forum-tabs" aria-label="Moderation filters"><a href="{{ prefix }}/moderation?kind=topics&amp;state={{ queue_state }}"{% if queue_kind == "topics" %} aria-current="page"{% endif %}>Topics</a><a href="{{ prefix }}/moderation?kind=replies&amp;state={{ queue_state }}"{% if queue_kind == "replies" %} aria-current="page"{% endif %}>Replies</a><a href="{{ prefix }}/moderation?kind={{ queue_kind }}&amp;state=pending">Pending</a><a href="{{ prefix }}/moderation?kind={{ queue_kind }}&amp;state=hidden">Hidden</a><a href="{{ prefix }}/moderation?kind={{ queue_kind }}&amp;state=rejected">Rejected</a></nav>
+  {% elif view == "history" %}
+  <header class="forum-heading"><div><p class="forum-eyebrow">Moderator workspace</p><h1>Moderation history</h1><p>Who changed what, when, and why.</p></div></header>
+  {% elif view == "moderate" %}
+  <header class="forum-heading"><div><p class="forum-eyebrow">Moderator action</p><h1>{{ moderation_action }} this post</h1><p>Your reason will be saved in the moderation history.</p></div></header>
+  {% elif view == "new" %}
+  <header class="forum-heading"><div><p class="forum-eyebrow">Join the conversation</p><h1>Start a discussion</h1><p>A clear title helps others find and answer your question.</p></div></header>
+  {% endif %}

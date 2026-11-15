@@ -80,7 +80,12 @@ Pending verification, recovery and MFA sessions do not count as signed in.
 
 Defaults are 160 characters per title, 10,000 per body, 20 items per page (maximum 100) and
 30 posting attempts per account throttle window (default 15 minutes). Configure
-`title_max_length`, `body_max_length`, `page_size` and `post_limit` in `-config`. IDs use KSUIDs. Public
+`title_max_length`, `body_max_length`, `page_size` and `post_limit` in `-config`.
+IDs use `topic_<ksuid>`, `reply_<ksuid>`, and
+`moderation_<ksuid>`, with a 27-character KSUID after the prefix. Paths and
+moderation-history topic filters require the matching resource prefix.
+Reply redirects use `#reply_<ksuid>`, matching the rendered element ID.
+Member profile URLs use `user_<ksuid>` account IDs supplied by `web-user`. Public
 author labels use the host-provided profile widget, with `Member` as the fallback.
 
 Groups and permissions are supplied by `web-user`; see the policy below.

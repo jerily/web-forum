@@ -1,5 +1,5 @@
 package require tcltest
-package require web-forum 0.2.0
+package require web-forum 0.3.0
 namespace import ::tcltest::*
 namespace eval ::modtest {}
 proc ::modtest::setup {{settings {}}} {
@@ -14,7 +14,7 @@ proc ::modtest::setup {{settings {}}} {
     ::web::forum::mount $router -store $store -user $auth -config [dict merge {page_size 2 post_limit 100} $settings]
     variable users {}
     foreach name {member moderator outsider} {
-        set uid [ksuid::generate_ksuid]
+        set uid user_[ksuid::generate_ksuid]
         set address $name@example.com
         ::web::user::insert $store web_user_users [dict create id $uid active 1 verified 1 email_key [::web::user::email_key $store $address] email [::web::user::seal $store $address [list email $uid]] password unused mfa_secret {} last_step -1 revision 0 created_at 1]
         set token [::web::user::new_session $store auth $uid]
@@ -44,12 +44,12 @@ proc ::modtest::call {who method target {fields {}} {headers {}}} {
     $::modtest::router dispatch $request {addr 127.0.0.1}
 }
 proc ::modtest::topic {{status published} {title Topic}} {
-    set id [ksuid::generate_ksuid]
+    set id [::web::forum::new_id topics]
     ::web::forum::insert $::modtest::store web_forum_topics [dict create id $id author [dict get $::modtest::users member id] title $title body {Topic body} created_at 1 status $status]
     return $id
 }
 proc ::modtest::reply {topic {status published}} {
-    set id [ksuid::generate_ksuid]
+    set id [::web::forum::new_id replies]
     ::web::forum::insert $::modtest::store web_forum_replies [dict create id $id topic $topic author [dict get $::modtest::users member id] body {Reply body} created_at 2 status $status]
     return $id
 }

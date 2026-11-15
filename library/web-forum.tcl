@@ -5,6 +5,7 @@
 # Load the forum package and its storage dependencies.
 package require tpersist 0.1.4
 package require web-user 0.5.0
+package require ksuid 1.0.5
 package require cmark_gfm 0.1.0
 package require topenapi 0.2.0
 namespace eval ::web::forum {
@@ -108,4 +109,4 @@ proc ::web::forum::asset {request context params} {
     return $result
 }
 foreach module {storage http render} {source [file join $::web::forum::root library $module.tcl]}
-package provide web-forum 0.2.0
+package provide web-forum 0.3.0

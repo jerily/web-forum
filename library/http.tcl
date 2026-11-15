@@ -53,7 +53,7 @@ proc ::web::forum::new {config request context params} {
         if {[dict get $request method] eq "POST"} {
             set form [post_form $config new $current $request $context]
             if {[string trim [dict get $form title]] eq {}} {::web::user::fail 400 "Enter a topic title."}
-            set entry [new_entry $config $current $form]
+            set entry [new_entry topics $config $current $form]
             dict set entry title [string trim [dict get $form title]]
             dict set entry locked 0
             set store [dict get $config -store]
@@ -68,7 +68,7 @@ proc ::web::forum::topic {config request context params} {
     try {
         set store [dict get $config -store]
         set id [dict get $params id]
-        validate_topic_id $id
+        validate_record_id topics $id
         set current [::web::user::current_user [dict get $config -user] $request $context]
         set topic [one $store web_forum_topics $id]
         if {$topic eq {} || ![visible $config $current $topic]} {::web::user::fail 404 "Topic not found."}
@@ -77,7 +77,7 @@ proc ::web::forum::topic {config request context params} {
             if {[dict get $topic locked] || [dict get $topic hidden] || [dict get $topic status] ne "published"} {
                 ::web::user::fail 403 "This discussion is not open for replies."
             }
-            set entry [new_entry $config $current $form]
+            set entry [new_entry replies $config $current $form]
             dict set entry topic $id
             db_transaction [dict get $store -connection] {
                 # Serialize posting against moderation; a concurrent lock or hide
@@ -90,7 +90,7 @@ proc ::web::forum::topic {config request context params} {
                 refresh_activity $store $id
             }
             set page [page_rows $config web_forum_replies [reply_filter $config $current $id] 1 1]
-            return [redirect [dict get $config -prefix]/topic/$id?page=[dict get $page pages]#reply-[dict get $entry id]]
+            return [redirect [dict get $config -prefix]/topic/$id?page=[dict get $page pages]#[dict get $entry id]]
         }
         set query [query $request {page 1}]
         set page [page_rows $config web_forum_replies [reply_filter $config $current $id] [dict get $query page] 1]
@@ -100,7 +100,7 @@ proc ::web::forum::topic {config request context params} {
 proc ::web::forum::profile {config request context params} {
     try {
         set uid [dict get $params id]
-        validate_topic_id $uid
+        validate_member_id $uid
         set current [::web::user::current_user [dict get $config -user] $request $context]
         set store [dict get $config -store]
         set query [query $request {page 1}]
@@ -132,7 +132,7 @@ proc ::web::forum::history {config request context params} {
         set query [query $request {page 1 topic {}}]
         set where {}
         if {[dict get $query topic] ne {}} {
-            validate_topic_id [dict get $query topic]
+            validate_record_id topics [dict get $query topic]
             dict set where topic_id [dict get $query topic]
         }
         set page [page_rows $config web_forum_moderation [predicate [dict get $config -store] $where] [dict get $query page]]
@@ -149,9 +149,9 @@ proc ::web::forum::moderate {config request context params} {
         set kind [dict get $params kind]
         set id [dict get $params id]
         set action [dict get $params action]
-        validate_topic_id $id
         if {$kind ni {topics replies} || $action ni {approve reject hide restore lock unlock} ||
                 ($kind eq "replies" && $action in {lock unlock})} {::web::user::fail 404 "Action not found."}
+        validate_record_id $kind $id
         set table web_forum_$kind
         set row [one $store $table $id]
         if {$row eq {}} {::web::user::fail 404 "Post not found."}
@@ -173,7 +173,7 @@ proc ::web::forum::moderate {config request context params} {
                     ::web::user::fail 409 "Post changed; reload and try again."
                 }
                 if {$kind eq "replies"} {refresh_activity $store $topicId}
-                insert $store web_forum_moderation [dict create id [::ksuid::generate_ksuid] kind $kind \
+                insert $store web_forum_moderation [dict create id [new_id moderation] kind $kind \
                     record_id $id topic_id $topicId moderator [dict get $current id] action $action \
                     reason [string trim [dict get $form reason]] created_at [clock seconds] \
                     before_state [moderation_state $row] after_state [moderation_state [dict merge $row $changes]]]

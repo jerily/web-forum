@@ -26,8 +26,11 @@ to the host. `initdb` is explicit and must precede serving requests.
 
 Routes: GET `/forum` and `/forum/`; GET/POST `/forum/new`; GET/POST
 `/forum/topic/:id`. POST new requires `title body csrf`; POST reply requires
-`body csrf`. IDs use `ksuid-tcl`. Posts are limited to 10000 characters and titles
-to 160; members are limited to 30 posting attempts per 15 minutes. Public author
+`body csrf`. IDs use `ksuid-tcl` with a resource prefix: `topic_<ksuid>`,
+`reply_<ksuid>`, and `moderation_<ksuid>`. Topic routes and moderation actions
+validate the prefix for the requested resource. Posts are limited to 10000
+characters and titles to 160; members are limited to 30 posting attempts per
+15 minutes. Public author
 labels use the host-provided profile widget, with `Member` as the fallback. Anonymous
 GET of the new-thread form redirects to login; anonymous POST is rejected.
 Topics, replies and discussion lists show creation dates and times in UTC.

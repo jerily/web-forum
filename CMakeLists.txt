@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(web-forum VERSION 0.2.0 LANGUAGES NONE)
+project(web-forum VERSION 0.3.0 LANGUAGES NONE)
 set(PACKAGE_DIR "lib/web-forum${PROJECT_VERSION}")
 install(FILES pkgIndex.tcl readme.md MOUNTING.md LICENSE DESTINATION "${PACKAGE_DIR}")
 install(DIRECTORY library sql assets frontend DESTINATION "${PACKAGE_DIR}")

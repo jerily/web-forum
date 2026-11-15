@@ -27,6 +27,31 @@
         "created_at": {
           "type": "bigint",
           "not_null": true
+        },
+        "status": {
+          "type": "text",
+          "not_null": true,
+          "default": "published"
+        },
+        "hidden": {
+          "type": "integer",
+          "not_null": true,
+          "default": 0
+        },
+        "revision": {
+          "type": "integer",
+          "not_null": true,
+          "default": 0
+        },
+        "locked": {
+          "type": "integer",
+          "not_null": true,
+          "default": 0
+        },
+        "last_activity_at": {
+          "type": "bigint",
+          "not_null": true,
+          "default": 0
         }
       },
       "primary_key": [
@@ -39,6 +64,46 @@
           "columns": [
             "tenant",
             "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_topics_visibility",
+          "columns": [
+            "tenant",
+            "status",
+            "hidden",
+            "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_topics_author_visible",
+          "columns": [
+            "tenant",
+            "author",
+            "status",
+            "hidden",
+            "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_topics_hidden",
+          "columns": [
+            "tenant",
+            "hidden",
+            "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_topics_activity",
+          "columns": [
+            "tenant",
+            "status",
+            "hidden",
+            "last_activity_at",
             "id"
           ]
         }
@@ -70,6 +135,21 @@
         "created_at": {
           "type": "bigint",
           "not_null": true
+        },
+        "status": {
+          "type": "text",
+          "not_null": true,
+          "default": "published"
+        },
+        "hidden": {
+          "type": "integer",
+          "not_null": true,
+          "default": 0
+        },
+        "revision": {
+          "type": "integer",
+          "not_null": true,
+          "default": 0
         }
       },
       "primary_key": [
@@ -82,6 +162,108 @@
           "columns": [
             "tenant",
             "topic",
+            "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_replies_visibility",
+          "columns": [
+            "tenant",
+            "status",
+            "hidden",
+            "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_replies_topic_visible",
+          "columns": [
+            "tenant",
+            "topic",
+            "status",
+            "hidden",
+            "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_replies_hidden",
+          "columns": [
+            "tenant",
+            "hidden",
+            "created_at",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "web_forum_moderation",
+      "columns": {
+        "tenant": {
+          "type": "text",
+          "not_null": true
+        },
+        "id": {
+          "type": "text",
+          "not_null": true
+        },
+        "kind": {
+          "type": "text",
+          "not_null": true
+        },
+        "record_id": {
+          "type": "text",
+          "not_null": true
+        },
+        "topic_id": {
+          "type": "text",
+          "not_null": true
+        },
+        "moderator": {
+          "type": "text",
+          "not_null": true
+        },
+        "action": {
+          "type": "text",
+          "not_null": true
+        },
+        "reason": {
+          "type": "text",
+          "not_null": true
+        },
+        "before_state": {
+          "type": "text",
+          "not_null": true
+        },
+        "after_state": {
+          "type": "text",
+          "not_null": true
+        },
+        "created_at": {
+          "type": "bigint",
+          "not_null": true
+        }
+      },
+      "primary_key": [
+        "tenant",
+        "id"
+      ],
+      "indexes": [
+        {
+          "name": "web_forum_moderation_topic",
+          "columns": [
+            "tenant",
+            "topic_id",
+            "created_at",
+            "id"
+          ]
+        },
+        {
+          "name": "web_forum_moderation_recent",
+          "columns": [
+            "tenant",
             "created_at",
             "id"
           ]

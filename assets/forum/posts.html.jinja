@@ -1,0 +1,9 @@
+  <ol class="forum-list">{% for item in items %}
+    <li class="forum-post" id="reply-{{ item.id }}">
+      {% if view != "topic" %}<h2><a href="{{ item.url }}">{{ item.title }}</a></h2>{% endif %}
+      <p class="forum-meta"><a href="{{ item.profile_url }}">{% if item.profile_widget %}{{ item.profile_widget | safe }}{% else %}{{ item.member }}{% endif %}</a><span aria-hidden="true">·</span><time datetime="{{ item.created_at_datetime }}">{{ item.created_at_label }}</time>{% if item.locked %}<span class="forum-badge">Locked</span>{% endif %}{% if item.hidden %}<span class="forum-badge">Hidden</span>{% endif %}{% if item.status != "published" %}<span class="forum-badge">{{ item.status }}</span>{% endif %}</p>
+      {% if view == "index" and sort == "activity" %}<p class="forum-meta">Latest activity <time datetime="{{ item.activity_datetime }}">{{ item.activity_label }}</time></p>{% endif %}
+      {% if view == "topic" or view == "queue" or view == "moderate" %}<div class="post-body markdown">{{ item.body_html | safe }}</div>{% endif %}
+      {% if can_moderate and view != "moderate" %}<nav class="forum-actions" aria-label="Moderate post">{% for action in item.actions %}<a href="{{ action.url }}">{{ action.label }}</a>{% endfor %}</nav>{% endif %}
+    </li>
+  {% else %}<li class="forum-empty">{% if view == "queue" %}You're all caught up. No posts in this queue.{% elif view == "topic" %}No replies yet. Add the first one below.{% else %}No discussions yet. Every community starts with a hello.{% endif %}</li>{% endfor %}</ol>

@@ -21,6 +21,15 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 10000
+              },
+              "captcha_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$"
+              },
+              "captcha_answer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
               }
             },
             "required": [
@@ -51,11 +60,54 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 10000
+              },
+              "captcha_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$"
+              },
+              "captcha_answer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
               }
             },
             "required": [
               "csrf",
               "body"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  },
+  "moderate": {
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/x-www-form-urlencoded": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "csrf": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9]{1,10}$"
+              }
+            },
+            "required": [
+              "csrf",
+              "reason",
+              "revision"
             ],
             "additionalProperties": false
           }

@@ -1,5 +1,5 @@
 package require tcltest
-package require web-forum
+package require web-forum 0.2.0
 namespace import ::tcltest::*
 test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe output} -setup {
     set ::env(ENV) LOCAL
@@ -17,7 +17,7 @@ test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe
         [dict get [$router dispatch {method GET path /forum/new} {}] statusCode] \
         [dict get [$router dispatch {method POST path /forum/new} {}] statusCode]]
     set uid [ksuid::generate_ksuid]
-    ::web::user::insert $store web_user_users [dict create id $uid email_key key email [::web::user::seal $store member@example.com [list email $uid]] password unused verified 1 mfa_secret {} last_step -1 revision 0 created_at 0]
+    ::web::user::insert $store web_user_users [dict create id $uid active 1 email_key key email [::web::user::seal $store member@example.com [list email $uid]] password unused verified 1 mfa_secret {} last_step -1 revision 0 created_at 0]
     set token [::web::user::new_session $store auth $uid]
     set csrf [::web::user::csrf_token $auth $token]
     set cookie [lindex [split [dict get [::web::user::set_cookie $auth {} $token] headers Set-Cookie] {;}] 0]

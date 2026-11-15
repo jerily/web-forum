@@ -1,0 +1,1 @@
+  {% if previous_url or next_url %}<nav class="forum-pagination" aria-label="Pagination">{% if previous_url %}<a href="{{ previous_url }}" rel="prev">← Previous</a>{% else %}<span></span>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if next_url %}<a href="{{ next_url }}" rel="next">Next →</a>{% else %}<span></span>{% endif %}</nav>{% endif %}

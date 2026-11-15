@@ -1,0 +1,60 @@
+source [file join [file dirname [info script]] support.tcl]
+proc ::modtest::captcha_setup {} {
+    package require tcaptcha
+    rename ::tcaptcha::image ::tcaptcha::real_image
+    proc ::tcaptcha::image {answer} {set ::modtest::answer $answer; real_image $answer}
+    setup {posting_captcha true}
+}
+proc ::modtest::captcha_cleanup {} {
+    cleanup
+    rename ::tcaptcha::image {}
+    rename ::tcaptcha::real_image ::tcaptcha::image
+}
+proc ::modtest::challenge {path} {
+    set response [call member GET $path]
+    if {![regexp {name="captcha_id" value="([^"]+)"} [dict get $response body] -> id]} {error {Missing CAPTCHA}}
+    return [dict create captcha_id $id captcha_answer $::modtest::answer]
+}
+test captcha-1 {posting policy requires a real, single-use challenge for topics and replies} -setup ::modtest::captcha_setup -body {
+    set fields [::modtest::challenge /forum/new]
+    set result [list [dict get [::modtest::call member POST /forum/new {title Topic body Hello}] statusCode]]
+    set response [::modtest::call member POST /forum/new [dict merge {title Topic body Hello} $fields]]
+    lappend result [dict get $response statusCode]
+    set path [dict get $response headers location]
+    lappend result [dict get [::modtest::call member POST /forum/new [dict merge {title Again body Again} $fields]] statusCode]
+    lappend result [dict get [::modtest::call member POST $path {body Reply}] statusCode]
+    set reply [::modtest::challenge $path]
+    lappend result [dict get [::modtest::call member POST $path [dict merge {body Reply} $reply]] statusCode]
+    lappend result [llength [::web::user::rows $::modtest::store web_forum_topics]] [llength [::web::user::rows $::modtest::store web_forum_replies]]
+    set result
+} -cleanup ::modtest::captcha_cleanup -result {400 303 400 400 303 1 1}
+
+test captcha-2 {challenges bind to the session, action, and topic; wrong answers are consumed} -setup ::modtest::captcha_setup -body {
+    set id [::modtest::topic]
+    set other [::modtest::topic]
+    set fields [::modtest::challenge /forum/new]
+    set result [list [dict get [::modtest::call outsider POST /forum/new [dict merge {title Bad body Bad} $fields]] statusCode]]
+    lappend result [dict get [::modtest::call member POST /forum/topic/$id [dict merge {body Bad} $fields]] statusCode]
+    set fields [::modtest::challenge /forum/topic/$id]
+    lappend result [dict get [::modtest::call member POST /forum/topic/$other [dict merge {body Bad} $fields]] statusCode]
+    lappend result [dict get [::modtest::call member POST /forum/topic/$id [dict merge {body Bad} [dict replace $fields captcha_answer wrong]]] statusCode]
+    lappend result [dict get [::modtest::call member POST /forum/topic/$id [dict merge {body Bad} $fields]] statusCode]
+    lappend result [llength [::web::user::rows $::modtest::store web_forum_replies]]
+    set result
+} -cleanup ::modtest::captcha_cleanup -result {400 400 400 400 400 0}
+
+test captcha-3 {expired challenges fail and disabled policy renders no challenge} -setup ::modtest::captcha_setup -body {
+    set fields [::modtest::challenge /forum/new]
+    set user [dict get $::modtest::users member]
+    set row [::web::user::session $::modtest::store [dict get $user token]]
+    set binding [::web::user::captcha_context $::modtest::auth {forum /forum new /forum/new} $row]
+    set key [::web::user::captcha_key $::modtest::store $binding [dict get $fields captcha_id]]
+    ::tsession::sql::update [dict get $::modtest::store -sessions] $key [dict create expires 0]
+    dict get [::modtest::call member POST /forum/new [dict merge {title Topic body Body} $fields]] statusCode
+} -cleanup ::modtest::captcha_cleanup -result 400
+
+test captcha-4 {disabled policy preserves ordinary posting} -setup ::modtest::setup -body {
+    list [string match {*captcha_id*} [dict get [::modtest::call member GET /forum/new] body]] \
+        [dict get [::modtest::call member POST /forum/new {title Topic body Hello}] statusCode]
+} -cleanup ::modtest::cleanup -result {0 303}
+cleanupTests

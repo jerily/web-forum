@@ -1,0 +1,156 @@
+source [file join [file dirname [info script]] support.tcl]
+test moderation-1 {approval gates public topics/replies and only authorized users see the queue} -setup {::modtest::setup {moderation true}} -body {
+    set response [::modtest::call member POST /forum/new {title {Awaiting approval} body {Hello everyone}}]
+    set path [dict get $response headers location]
+    set id [file tail $path]
+    set result [list [dict get $response statusCode] [dict get [::modtest::call {} GET $path] statusCode] [dict get [::modtest::call member GET $path] statusCode] [dict get [::modtest::call outsider GET /forum/moderation] statusCode]]
+    lappend result [string match {*Awaiting approval*} [dict get [::modtest::call {} GET /forum] body]]
+    lappend result [string match {*Awaiting approval*} [dict get [::modtest::call moderator GET /forum/moderation] body]]
+    ::modtest::action topics $id approve
+    lappend result [dict get [::modtest::call {} GET $path] statusCode]
+    ::modtest::call member POST $path {body {Pending reply text}}
+    lappend result [string match {*Pending reply text*} [dict get [::modtest::call {} GET $path] body]]
+    set reply [lindex [::web::user::rows $::modtest::store web_forum_replies] 0]
+    ::modtest::action replies [dict get $reply id] approve
+    lappend result [string match {*Pending reply text*} [dict get [::modtest::call {} GET $path] body]]
+    set result
+} -cleanup ::modtest::cleanup -result {303 404 200 403 0 1 200 0 1}
+
+test moderation-2 {hide/restore and lock/unlock are enforced, with atomic attributed reasons} -setup ::modtest::setup -body {
+    set id [::modtest::topic]
+    set reply [::modtest::reply $id]
+    ::modtest::action replies $reply hide
+    set result [list [string match {*Reply body*} [dict get [::modtest::call {} GET /forum/topic/$id] body]]]
+    ::modtest::action replies $reply restore
+    lappend result [string match {*Reply body*} [dict get [::modtest::call {} GET /forum/topic/$id] body]]
+    ::modtest::action topics $id lock
+    lappend result [dict get [::modtest::call member POST /forum/topic/$id {body blocked}] statusCode]
+    ::modtest::action topics $id unlock
+    lappend result [dict get [::modtest::call member POST /forum/topic/$id {body allowed}] statusCode]
+    ::modtest::action topics $id hide
+    lappend result [dict get [::modtest::call {} GET /forum/topic/$id] statusCode]
+    ::modtest::action topics $id restore
+    lappend result [dict get [::modtest::call {} GET /forum/topic/$id] statusCode]
+    set logs [::web::user::rows $::modtest::store web_forum_moderation]
+    set valid 1
+    foreach log $logs {
+        if {[dict get $log moderator] ne [dict get $::modtest::users moderator id] || [dict get $log reason] ne {Keep discussions welcoming.} || [dict get $log created_at] <= 0 || [dict get $log before_state] eq [dict get $log after_state]} {set valid 0}
+    }
+    lappend result [llength $logs] $valid
+    set result
+} -cleanup ::modtest::cleanup -result {0 1 403 303 404 200 6 1}
+
+test moderation-3 {hidden pending content remains pending after restore; reject never publishes it} -setup ::modtest::setup -body {
+    set id [::modtest::topic pending]
+    ::modtest::action topics $id hide
+    ::modtest::action topics $id restore
+    set result [list [dict get [::modtest::call {} GET /forum/topic/$id] statusCode]]
+    ::modtest::action topics $id reject
+    lappend result [dict get [::web::forum::one $::modtest::store web_forum_topics $id] status]
+    lappend result [dict get [::modtest::call {} GET /forum/topic/$id] statusCode]
+    set result
+} -cleanup ::modtest::cleanup -result {404 rejected 404}
+
+test moderation-4 {GET is read-only; permission, CSRF, origin, reason and revision guard writes} -setup ::modtest::setup -body {
+    set id [::modtest::topic]
+    set path /forum/moderate/topics/$id/hide
+    set result [list [dict get [::modtest::call moderator GET $path] statusCode] [dict get [::web::forum::one $::modtest::store web_forum_topics $id] hidden]]
+    lappend result [dict get [::modtest::call member POST $path {reason test revision 0}] statusCode]
+    lappend result [dict get [::modtest::call moderator POST $path {reason test revision 0 csrf bad}] statusCode]
+    lappend result [dict get [::modtest::call moderator POST $path {reason test revision 0} {origin https://evil.example}] statusCode]
+    lappend result [dict get [::modtest::call moderator POST $path {reason { } revision 0}] statusCode]
+    lappend result [dict get [::modtest::call moderator POST $path {reason test revision 99}] statusCode]
+    lappend result [llength [::web::user::rows $::modtest::store web_forum_moderation]]
+    ::web::user::sync_access $::modtest::store {moderators {}} {moderators forum.moderate}
+    lappend result [dict get [::modtest::call moderator POST $path {reason test revision 0}] statusCode]
+    set result
+} -cleanup ::modtest::cleanup -result {200 0 403 403 403 400 409 0 403}
+
+test moderation-5 {public pagination excludes private posts, handles ties and links author profiles} -setup ::modtest::setup -body {
+    foreach title {First Second Third Fourth Fifth} {::modtest::topic published $title}
+    ::modtest::topic pending {Secret pending}
+    set hidden [::modtest::topic published {Secret hidden}]
+    ::modtest::action topics $hidden hide
+    set seen {}
+    set counts {}
+    for {set page 1} {$page <= 3} {incr page} {
+        set response [::modtest::call {} GET /forum?page=$page]
+        set html [dict get $response body]
+        set ids [regexp -all -inline {<li class="forum-post" id="reply-([A-Za-z0-9]+)"} $html]
+        set members {}
+        foreach {tag id} $ids {lappend seen $id; lappend members $id}
+        lappend counts [llength $members]
+        if {[string match {*Secret*} $html]} {error "private post leaked"}
+    }
+    set profile [::modtest::call {} GET /forum/member/[dict get $::modtest::users member id]]
+    list $counts [llength [lsort -unique $seen]] [dict get [::modtest::call {} GET /forum?page=4] statusCode] \
+        [dict get [::modtest::call {} GET /forum?page=-1] statusCode] [dict get $profile statusCode] \
+        [string match {*member@example.com*} [dict get $profile body]]
+} -cleanup ::modtest::cleanup -result {{2 2 1} 5 404 400 200 0}
+
+test moderation-6 {audit markup is escaped and unavailable to ordinary members} -setup ::modtest::setup -body {
+    set id [::modtest::topic]
+    ::modtest::action topics $id hide {<script>alert(1)</script>}
+    set html [dict get [::modtest::call moderator GET /forum/moderation/history] body]
+    list [dict get [::modtest::call member GET /forum/moderation/history] statusCode] \
+        [string match {*&lt;script&gt;*} $html] [string match {*<script>alert*} $html] \
+        [string match {*Pending moderation*} [dict get [::modtest::call member GET /forum] body]]
+} -cleanup ::modtest::cleanup -result {403 1 0 0}
+
+test moderation-7 {a failed audit insert rolls back the moderation change} -setup ::modtest::setup -body {
+    set id [::modtest::topic]
+    rename ::web::forum::insert ::web::forum::real_insert
+    proc ::web::forum::insert {store table row} {
+        if {$table eq "web_forum_moderation"} {error {audit storage unavailable}}
+        real_insert $store $table $row
+    }
+    try {
+        set failed [catch {::modtest::action topics $id hide}]
+        list $failed [dict get [::web::forum::one $::modtest::store web_forum_topics $id] hidden] \
+            [llength [::web::user::rows $::modtest::store web_forum_moderation]]
+    } finally {
+        rename ::web::forum::insert {}
+        rename ::web::forum::real_insert ::web::forum::insert
+    }
+} -cleanup ::modtest::cleanup -result {1 0 0}
+
+test moderation-8 {replies paginate in chronological order and author links use forum profiles} -setup ::modtest::setup -body {
+    set id [::modtest::topic]
+    for {set i 0} {$i < 5} {incr i} {::modtest::reply $id}
+    set seen {}
+    set counts {}
+    for {set page 1} {$page <= 3} {incr page} {
+        set html [dict get [::modtest::call {} GET /forum/topic/$id?page=$page] body]
+        set ids [regexp -all -inline {<li class="forum-post" id="reply-([A-Za-z0-9]+)"} $html]
+        foreach {tag reply} $ids {lappend seen $reply}
+        lappend counts [expr {[llength $ids] / 2}]
+    }
+    set author [dict get $::modtest::users member id]
+    list $counts [llength [lsort -unique $seen]] \
+        [regexp -all "href=\"/forum/member/$author\"" $html]
+} -cleanup ::modtest::cleanup -result {{2 2 1} 5 2}
+
+
+proc ::modtest::titles {sort} {
+    set html [dict get [call {} GET /forum?sort=$sort] body]
+    set result {}
+    foreach {all title} [regexp -all -inline {<h2><a href="[^"]+">([^<]+)</a></h2>} $html] {lappend result $title}
+    return $result
+}
+test moderation-9 {newest is the default; activity sort tracks approval, hiding and restoring replies} -setup ::modtest::setup -body {
+    set older [::modtest::topic published Older]
+    set newer [::modtest::topic published Newer]
+    ::web::forum::update $::modtest::store web_forum_topics [dict create id $newer] {created_at 10 last_activity_at 10}
+    set reply [::modtest::reply $older pending]
+    ::web::forum::update $::modtest::store web_forum_replies [dict create id $reply] {created_at 20}
+    set result [list [::modtest::titles newest] [::modtest::titles activity]]
+    ::modtest::action replies $reply approve
+    lappend result [::modtest::titles activity]
+    ::modtest::action replies $reply hide
+    lappend result [::modtest::titles activity]
+    ::modtest::action replies $reply restore
+    lappend result [::modtest::titles activity] [::modtest::titles newest]
+    lappend result [string match {*sort=newest" aria-current="page"*} [dict get [::modtest::call {} GET /forum] body]]
+    set result
+} -cleanup ::modtest::cleanup -result {{Newer Older} {Newer Older} {Older Newer} {Newer Older} {Older Newer} {Newer Older} 1}
+cleanupTests

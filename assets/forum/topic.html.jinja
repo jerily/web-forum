@@ -1,0 +1,10 @@
+  <article class="forum-post forum-topic">
+    <h1>{{ topic_title }}</h1>
+    <p class="forum-meta"><a href="{{ topic_profile_url }}">{% if topic_profile_widget %}{{ topic_profile_widget | safe }}{% else %}Member{% endif %}</a><span aria-hidden="true">·</span><time datetime="{{ topic_created_at_datetime }}">{{ topic_created_at_label }}</time></p>
+    {% if topic_hidden %}<p class="forum-notice">This discussion is hidden from public view.</p>{% endif %}
+    {% if topic_status == "pending" %}<p class="forum-notice">Waiting for moderator approval. This discussion is not public yet.</p>{% elif topic_status == "rejected" %}<p class="forum-notice">This submission was not approved.</p>{% endif %}
+    {% if topic_locked %}<p class="forum-notice">This discussion is locked. New replies are closed.</p>{% endif %}
+    <div class="post-body markdown">{{ topic_html | safe }}</div>
+    {% if can_moderate %}<nav class="forum-actions" aria-label="Moderate discussion">{% for action in topic_actions %}<a href="{{ action.url }}">{{ action.label }}</a>{% endfor %}<a href="{{ topic_history_url }}">History</a></nav>{% endif %}
+  </article>
+  <h2 class="forum-section-title">Replies <span>{{ total }}</span></h2>

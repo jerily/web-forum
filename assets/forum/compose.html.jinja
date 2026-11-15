@@ -1,0 +1,9 @@
+    {% if signed_in and can_reply %}
+    <form class="forum-compose" method="post" action="{{ action_url }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+      {% if view == "new" %}<label for="forum-title">Title</label><input id="forum-title" name="title" maxlength="{{ title_max_length }}" required>{% else %}<h2>Add your reply</h2>{% endif %}
+      <label for="forum-message">Your message</label><textarea id="forum-message" name="body" rows="8" maxlength="{{ body_max_length }}" data-markdown-editor required></textarea>
+      {% include "forum/captcha.html.jinja" %}
+      {% if moderation %}<p class="forum-help">A moderator will review your post before it appears publicly.</p>{% endif %}
+      <button class="forum-button" type="submit">{% if moderation %}Submit for review{% else %}Post{% endif %}</button>
+    </form>
+    {% elif not signed_in and can_reply %}<p class="forum-notice"><a href="{{ login_url }}">Sign in to join the conversation</a>.</p>{% endif %}

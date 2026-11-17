@@ -1,5 +1,5 @@
 package require tcltest
-package require web-forum 0.3.0
+package require web-forum 0.3.1
 namespace import ::tcltest::*
 test forum-schema-1 {additive initialization preserves discussion content and defaults it to visible} -setup {
     set db [::tpersist::db_connect -database :memory: -autobegin false]

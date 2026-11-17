@@ -4,7 +4,7 @@
 
 # Load the forum package and its storage dependencies.
 package require tpersist 0.1.4
-package require web-user 0.5.0
+package require web-user 0.5.4
 package require ksuid 1.0.5
 package require cmark_gfm 0.1.0
 package require topenapi 0.2.0
@@ -39,7 +39,7 @@ proc ::web::forum::mount {router args} {
     dict set settings moderation [expr {!![dict get $settings moderation]}]
     if {![string is boolean -strict [dict get $settings posting_captcha]]} {error "posting_captcha must be a boolean"}
     dict set settings posting_captcha [expr {!![dict get $settings posting_captcha]}]
-    if {[dict get $settings posting_captcha]} {package require tcaptcha 0.1.0}
+    if {[dict get $settings posting_captcha]} {package require tcaptcha 1.0.0}
     set prefix [string trimright [dict get $config -prefix] /]
     if {![regexp {^(/[A-Za-z0-9_-]+)+$} $prefix]} {error "invalid forum prefix"}
     dict set config -prefix $prefix
@@ -109,4 +109,4 @@ proc ::web::forum::asset {request context params} {
     return $result
 }
 foreach module {storage http render} {source [file join $::web::forum::root library $module.tcl]}
-package provide web-forum 0.3.0
+package provide web-forum 0.3.1

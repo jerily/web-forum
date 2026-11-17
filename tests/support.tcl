@@ -1,5 +1,5 @@
 package require tcltest
-package require web-forum 0.3.0
+package require web-forum 0.3.1
 namespace import ::tcltest::*
 namespace eval ::modtest {}
 proc ::modtest::setup {{settings {}}} {

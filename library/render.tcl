@@ -31,7 +31,7 @@ proc ::web::forum::render {config view current topic page request context} {
         view $view sort [dict get $page sort] topic_title {} topic_html {} topic_profile_widget {} topic_profile_url {} \
         topic_created_at_datetime {} topic_created_at_label {} topic_status published topic_history_url {} \
         action_url $prefix/new login_url [dict get $auth -prefix]/login csrf {} captcha_id {} captcha_png {} \
-        assets $prefix/_assets body_max_length [dict get $config -config body_max_length] \
+        assets [dict get $config -config assets_url] body_max_length [dict get $config -config body_max_length] \
         title_max_length [dict get $config -config title_max_length] \
         page [dict get $page page] pages [dict get $page pages] total [dict get $page total] \
         previous_url {} next_url {} queue_kind [dict get $page kind] queue_state [dict get $page state] \

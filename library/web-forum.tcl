@@ -26,7 +26,7 @@ proc ::web::forum::mount {router args} {
     variable root
     set config [::web::user::options {-store {} -user {} -prefix {} -config {}} {*}$args]
     set settings [::web::user::options {
-        prefix /forum title Forum master_template {} templates {} properties {} widgets {} render_markdown {}
+        prefix /forum title Forum master_template {} templates {} properties {} widgets {} render_markdown {} assets_url {}
         page_size 20 body_max_length 10000 title_max_length 160 post_limit 30 moderation false posting_captcha false
     } {*}[dict get $config -config]]
     if {[dict get $config -store] eq {} || [dict get $config -user] eq {}} {error "-store and -user are required"}
@@ -43,6 +43,8 @@ proc ::web::forum::mount {router args} {
     set prefix [string trimright [dict get $config -prefix] /]
     if {![regexp {^(/[A-Za-z0-9_-]+)+$} $prefix]} {error "invalid forum prefix"}
     dict set config -prefix $prefix
+    if {[dict get $settings assets_url] eq {}} {dict set settings assets_url $prefix/_assets}
+    dict set settings assets_url [string trimright [dict get $settings assets_url] /]
     set templates {}
     set names {page.html.jinja forum.html.jinja}
     foreach filename [lsort [glob -directory [file join $root assets forum] *.html.jinja]] {
@@ -109,4 +111,4 @@ proc ::web::forum::asset {request context params} {
     return $result
 }
 foreach module {storage http render} {source [file join $::web::forum::root library $module.tcl]}
-package provide web-forum 0.3.1
+package provide web-forum 0.3.2

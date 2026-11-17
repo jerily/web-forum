@@ -60,6 +60,12 @@ Request schemas use `topenapi` 0.2.0; see `assets/operations.json` and the mount
 For reusable profile widgets, see the [widget contract](https://github.com/jerily/web-user/blob/main/WIDGETS.md)
 and the host-wiring example in [MOUNTING.md](MOUNTING.md).
 
+Mount configuration accepts `assets_url` to supply the browser-asset base URL,
+for example `https://cdn.example/cdn/forum/_assets`.
+Templates receive this value as `assets`; the default is the mount prefix plus
+`/_assets`, and local asset routes remain available. The host is responsible for
+uploading these files and allowing the CDN in its content security policy.
+
 ## Ordering and moderation
 
 The topic list defaults to **Newest topics**. Visitors can choose **Latest

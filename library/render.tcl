@@ -137,8 +137,8 @@ proc ::web::forum::render {config view current topic page request context} {
     dict set typed topic_locked [list BOOL [expr {$topic ne {} && [dict get $topic locked]}]]
     dict set typed can_reply [list BOOL $open]
     dict set typed editing [list BOOL [expr {$current ne {} && $view in {new topic} && $open}]]
-    set templates [dict get $config -templates]
-    set body [::jinja2::render [dict get $templates forum.html.jinja] \
-        [::tjson::typed_to_json [list M $typed]] -templates $templates -path forum.html.jinja]
+
+    set body [render_template $config forum.html.jinja \
+        [::tjson::typed_to_json [list M $typed]]]
     ::web::user::response 200 $body
 }

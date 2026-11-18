@@ -1,3 +1,4 @@
+package require web-forum::routes 1.0
 # Copyright Jerily LTD. All Rights Reserved.
 # SPDX-FileCopyrightText: 2026 Neofytos Dimitriou (neo@jerily.cy)
 # SPDX-License-Identifier: MIT.
@@ -22,7 +23,7 @@ proc ::web::forum::initdb {connection} {
 }
 
 # Capture this site's settings and register each route before catch-all routes.
-proc ::web::forum::mount {router args} {
+proc ::web::forum::prepare_mount {args} {
     variable root
     set config [::web::user::options {-store {} -user {} -prefix {} -config {} -secret_config {}} {*}$args]
     # Account credentials belong to the supplied user mount. Accept this
@@ -30,7 +31,7 @@ proc ::web::forum::mount {router args} {
     dict size [dict get $config -secret_config]
     dict unset config -secret_config
     set settings [::web::user::options {
-        prefix /forum title Forum master_template {} templates {} properties {} widgets {} render_markdown {} assets_url {}
+        prefix /forum title Forum master_template {} templates {} template_renderer {} properties {} widgets {} render_markdown {} assets_url {}
         page_size 20 body_max_length 10000 title_max_length 160 post_limit 30 moderation false posting_captcha false validate_templates true
     } {*}[dict get $config -config]]
     if {[dict get $config -store] eq {} || [dict get $config -user] eq {}} {error "-store and -user are required"}
@@ -49,21 +50,25 @@ proc ::web::forum::mount {router args} {
     dict set config -prefix $prefix
     if {[dict get $settings assets_url] eq {}} {dict set settings assets_url $prefix/_assets}
     dict set settings assets_url [string trimright [dict get $settings assets_url] /]
-    dict set config -templates [prepare_templates $settings]
+    if {[dict get $settings template_renderer] eq {}} {
+        dict set config -templates [prepare_templates $settings]
+    }
     dict set config -config $settings
     dict set config -operations [request_operations $settings]
+    return $config
+}
+
+proc ::web::forum::mount {router args} {
+    set config [prepare_mount {*}$args]
+    set prefix [dict get $config -prefix]
+    set settings [dict get $config -config]
     foreach path [list $prefix $prefix/ $prefix/new $prefix/topic/test $prefix/_assets/editor.css] {
         if {[dict get [$router match GET $path] statusCode] != 404} {error "forum prefix already handled"}
     }
-    $router add GET $prefix [list ::web::forum::index $config] -strict true
-    $router add GET $prefix/ [list ::web::forum::index $config] -strict true
-    $router add {GET POST} $prefix/new [list ::web::forum::new $config] -strict true
-    $router add {GET POST} $prefix/topic/:id [list ::web::forum::topic $config] -strict true
-    $router add GET $prefix/member/:id [list ::web::forum::profile $config] -strict true
-    $router add GET $prefix/moderation [list ::web::forum::queue $config] -strict true
-    $router add GET $prefix/moderation/history [list ::web::forum::history $config] -strict true
-    $router add {GET POST} $prefix/moderate/:kind/:id/:action [list ::web::forum::moderate $config] -strict true
-    $router add GET $prefix/_assets/:asset ::web::forum::asset -strict true
+    foreach route [::web::forum::route_specs $prefix $config $settings] {
+        lassign $route method path handler
+        $router add $method $path $handler -strict true
+    }
     return $config
 }
 
@@ -106,13 +111,14 @@ proc ::web::forum::asset {request context params} {
     return $result
 }
 foreach module {storage http render} {source [file join $::web::forum::root library $module.tcl]}
-package provide web-forum 0.3.3
+package provide web-forum 0.3.4
 
 # Prepare the exact host/package composition without opening storage or mounting
 # routes. Production hosts may skip validation after checking their artifact.
 proc ::web::forum::prepare_templates {{settings {}}} {
+    package require jinja2 0.2.0
     variable root
-    set settings [dict merge {master_template {} templates {} validate_templates true} $settings]
+    set settings [dict merge {master_template {} templates {} template_renderer {} validate_templates true} $settings]
     if {![string is boolean -strict [dict get $settings validate_templates]]} {error "validate_templates must be a boolean"}
     set templates {}
     set names {page.html.jinja forum.html.jinja}
@@ -129,4 +135,13 @@ proc ::web::forum::prepare_templates {{settings {}}} {
         dict for {name text} $templates {::jinja2::validate $text -templates $templates -path $name}
     }
     return $templates
+}
+
+# Hosts may render by name without supplying template strings in mount options.
+proc ::web::forum::render_template {config name json} {
+    set renderer [dict get $config -config template_renderer]
+    if {$renderer ne {}} {return [{*}$renderer $name $json]}
+    package require jinja2 0.2.0
+    set templates [dict get $config -templates]
+    ::jinja2::render [dict get $templates $name] $json -templates $templates -path $name
 }

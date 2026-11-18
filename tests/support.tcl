@@ -37,7 +37,7 @@ proc ::modtest::call {who method target {fields {}} {headers {}}} {
     if {$method eq "POST"} {
         if {$who ne {} && ![dict exists $fields csrf]} {dict set fields csrf [dict get $users $who csrf]}
         set pairs {}
-        dict for {key value} $fields {lappend pairs [::tmfa::_uri_component $key]=[::tmfa::_uri_component $value]}
+        dict for {key value} $fields {lappend pairs [::web::user::uri_component $key]=[::web::user::uri_component $value]}
         dict set request headers content-type application/x-www-form-urlencoded
         dict set request body [join $pairs &]
     }

@@ -1,14 +1,14 @@
 package require tcltest
-package require web-forum 0.3.1
+package require web-forum 1.0.0
 namespace import ::tcltest::*
 test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe output} -setup {
     set ::env(ENV) LOCAL
-    set db [::web::user::connect {sqlite_path :memory:}]
-    ::web::user::initdb $db
+    set db [::web::user::connect {db_dialect sqlite sqlite_path :memory:}]
+    ::web::user::initdb $db {db_dialect sqlite}
     ::web::forum::initdb $db
     set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
     set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
-    set store [::web::user::create -connection $db -config [dict create tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
+    set store [::web::user::create -connection $db -config [dict create db_dialect sqlite require_https_origin false secure_cookies false require_email_delivery false aws_email_enabled false tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth -config {body_max_length 100}
@@ -57,12 +57,12 @@ proc ::forumtest::profile {properties request context} {
 test forum-2 {profile provider is host supplied, receives context and renders once per author} -setup {
 
     set ::env(ENV) LOCAL
-    set db [::web::user::connect {sqlite_path :memory:}]
-    ::web::user::initdb $db
+    set db [::web::user::connect {db_dialect sqlite sqlite_path :memory:}]
+    ::web::user::initdb $db {db_dialect sqlite}
     ::web::forum::initdb $db
     set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
     set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
-    set store [::web::user::create -connection $db -config [dict create tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
+    set store [::web::user::create -connection $db -config [dict create db_dialect sqlite require_https_origin false secure_cookies false require_email_delivery false aws_email_enabled false tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth -config [dict create body_max_length 100 widgets [dict create profile ::forumtest::profile]]
@@ -89,12 +89,12 @@ test forum-2 {profile provider is host supplied, receives context and renders on
 
 test forum-3 {stored creation times render in UTC on topics, replies and the discussion list} -setup {
     set ::env(ENV) LOCAL
-    set db [::web::user::connect {sqlite_path :memory:}]
-    ::web::user::initdb $db
+    set db [::web::user::connect {db_dialect sqlite sqlite_path :memory:}]
+    ::web::user::initdb $db {db_dialect sqlite}
     ::web::forum::initdb $db
     set aead [tink::register_keyset [tink::aead::create_keyset AES256_GCM]]
     set mac [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]
-    set store [::web::user::create -connection $db -config [dict create tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
+    set store [::web::user::create -connection $db -config [dict create db_dialect sqlite require_https_origin false secure_cookies false require_email_delivery false aws_email_enabled false tenant forum-test aead $aead mac $mac email_hash_salt forum-test-salt]]
     set router [tpathexp::router]
     set auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth

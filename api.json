@@ -1,0 +1,160 @@
+{
+  "format": "ttrek-web-api/1",
+  "package": "web-forum",
+  "summary": "Mount discussions and moderation.",
+  "mount": {
+    "command": "::web::forum::mount",
+    "prefix": {
+      "option": "-prefix",
+      "default": "/forum",
+      "allowRoot": false
+    },
+    "docs": "MOUNTING.md"
+  },
+  "inputs": {},
+  "router": {
+    "engine": "tpathexp",
+    "strict": true
+  },
+  "routerMiddleware": [],
+  "routes": [
+    {
+      "id": "index",
+      "summary": "List topics.",
+      "methods": [
+        "GET"
+      ],
+      "path": "",
+      "handler": [
+        "::web::forum::index",
+        {
+          "bind": "config"
+        }
+      ]
+    },
+    {
+      "id": "index.slash",
+      "summary": "List topics at the trailing-slash URL.",
+      "methods": [
+        "GET"
+      ],
+      "path": "/",
+      "handler": [
+        "::web::forum::index",
+        {
+          "bind": "config"
+        }
+      ]
+    },
+    {
+      "id": "new",
+      "summary": "Show the new-topic form or submit a topic.",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "/new",
+      "handler": [
+        "::web::forum::new",
+        {
+          "bind": "config"
+        }
+      ],
+      "access": {
+        "signedIn": true
+      }
+    },
+    {
+      "id": "topic",
+      "summary": "View a topic or submit a signed-in reply.",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "/topic/:id",
+      "handler": [
+        "::web::forum::topic",
+        {
+          "bind": "config"
+        }
+      ]
+    },
+    {
+      "id": "profile",
+      "summary": "Show a member profile.",
+      "methods": [
+        "GET"
+      ],
+      "path": "/member/:id",
+      "handler": [
+        "::web::forum::profile",
+        {
+          "bind": "config"
+        }
+      ]
+    },
+    {
+      "id": "moderation",
+      "summary": "List items awaiting moderation.",
+      "methods": [
+        "GET"
+      ],
+      "path": "/moderation",
+      "handler": [
+        "::web::forum::queue",
+        {
+          "bind": "config"
+        }
+      ],
+      "access": {
+        "permission": "forum.moderate"
+      }
+    },
+    {
+      "id": "history",
+      "summary": "Show moderation history.",
+      "methods": [
+        "GET"
+      ],
+      "path": "/moderation/history",
+      "handler": [
+        "::web::forum::history",
+        {
+          "bind": "config"
+        }
+      ],
+      "access": {
+        "permission": "forum.moderate"
+      }
+    },
+    {
+      "id": "moderate",
+      "summary": "Review or apply a moderation action.",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "path": "/moderate/:kind/:id/:action",
+      "handler": [
+        "::web::forum::moderate",
+        {
+          "bind": "config"
+        }
+      ],
+      "access": {
+        "permission": "forum.moderate"
+      }
+    },
+    {
+      "id": "asset",
+      "summary": "Serve a bundled asset.",
+      "methods": [
+        "GET"
+      ],
+      "path": "/_assets/:asset",
+      "handler": [
+        "::web::forum::asset"
+      ]
+    }
+  ]
+}

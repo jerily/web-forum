@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: MIT.
 
 # Register the package and load its dependencies.
-package ifneeded web-forum 0.3.4 [list source [file join $dir library web-forum.tcl]]
+package ifneeded web-forum 1.0.0 [list source [file join $dir library web-forum.tcl]]
 
-package ifneeded web-forum::routes 1.0 [list source [file join $dir library routes.tcl]]
+# Locate the manifest without loading application services.
+package ifneeded web-forum::manifest 1.0.0 [list apply {{dir} {
+    package require web-core 0.1.0
+    ::web::core::register web-forum $dir
+    package provide web-forum::manifest 1.0.0
+}} $dir]

@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: MIT.
 
 # Load the forum package and its storage dependencies.
-package require -exact web-forum::manifest 1.0.0
-package require tpersist 0.1.4
-package require web-user 1.0.0
-package require ksuid 1.0.5
-package require cmark_gfm 0.1.0
-package require topenapi 0.2.0
+package require web-forum::manifest
+package require tpersist
+package require web-user
+package require ksuid
+package require cmark_gfm
+package require topenapi
 namespace eval ::web::forum {
     variable root [file dirname [file dirname [info script]]]
     namespace import ::tpersist::db_*
@@ -44,7 +44,7 @@ proc ::web::forum::prepare_mount {args} {
     dict set settings moderation [expr {!![dict get $settings moderation]}]
     if {![string is boolean -strict [dict get $settings posting_captcha]]} {error "posting_captcha must be a boolean"}
     dict set settings posting_captcha [expr {!![dict get $settings posting_captcha]}]
-    if {[dict get $settings posting_captcha]} {package require tcaptcha 1.0.0}
+    if {[dict get $settings posting_captcha]} {package require tcaptcha}
     set prefix [string trimright [dict get $config -prefix] /]
     if {![regexp {^(/[A-Za-z0-9_-]+)+$} $prefix]} {error "invalid forum prefix"}
     dict set config -prefix $prefix
@@ -117,7 +117,7 @@ package provide web-forum 1.0.0
 # Prepare the exact host/package composition without opening storage or mounting
 # routes. Production hosts may skip validation after checking their artifact.
 proc ::web::forum::prepare_templates {{settings {}}} {
-    package require jinja2 0.2.0
+    package require jinja2
     variable root
     set settings [dict merge {master_template {} templates {} template_renderer {} validate_templates true} $settings]
     if {![string is boolean -strict [dict get $settings validate_templates]]} {error "validate_templates must be a boolean"}
@@ -142,7 +142,7 @@ proc ::web::forum::prepare_templates {{settings {}}} {
 proc ::web::forum::render_template {config name json} {
     set renderer [dict get $config -config template_renderer]
     if {$renderer ne {}} {return [{*}$renderer $name $json]}
-    package require jinja2 0.2.0
+    package require jinja2
     set templates [dict get $config -templates]
     ::jinja2::render [dict get $templates $name] $json -templates $templates -path $name
 }

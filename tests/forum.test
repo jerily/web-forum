@@ -1,5 +1,5 @@
 package require tcltest
-package require web-forum 1.0.0
+package require web-forum
 namespace import ::tcltest::*
 test forum-1 {mount defaults, authenticated posting, Markdown rendering and safe output} -setup {
     set ::env(ENV) LOCAL

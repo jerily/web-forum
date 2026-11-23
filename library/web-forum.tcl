@@ -1,11 +1,11 @@
-package require web-forum::routes 1.0
 # Copyright Jerily LTD. All Rights Reserved.
 # SPDX-FileCopyrightText: 2026 Neofytos Dimitriou (neo@jerily.cy)
 # SPDX-License-Identifier: MIT.
 
 # Load the forum package and its storage dependencies.
+package require -exact web-forum::manifest 1.0.0
 package require tpersist 0.1.4
-package require web-user 0.5.4
+package require web-user 1.0.0
 package require ksuid 1.0.5
 package require cmark_gfm 0.1.0
 package require topenapi 0.2.0
@@ -25,12 +25,12 @@ proc ::web::forum::initdb {connection} {
 # Capture this site's settings and register each route before catch-all routes.
 proc ::web::forum::prepare_mount {args} {
     variable root
-    set config [::web::user::options {-store {} -user {} -prefix {} -config {} -secret_config {}} {*}$args]
+    set config [::web::core::options {-store {} -user {} -prefix {} -config {} -secret_config {}} {*}$args]
     # Account credentials belong to the supplied user mount. Accept this
     # reserved option without retaining unused values in route command prefixes.
     dict size [dict get $config -secret_config]
     dict unset config -secret_config
-    set settings [::web::user::options {
+    set settings [::web::core::options {
         prefix /forum title Forum master_template {} templates {} template_renderer {} properties {} widgets {} render_markdown {} assets_url {}
         page_size 20 body_max_length 10000 title_max_length 160 post_limit 30 moderation false posting_captcha false validate_templates true
     } {*}[dict get $config -config]]
@@ -58,17 +58,18 @@ proc ::web::forum::prepare_mount {args} {
     return $config
 }
 
+# Register this mount's manifest routes on the supplied router.
 proc ::web::forum::mount {router args} {
     set config [prepare_mount {*}$args]
     set prefix [dict get $config -prefix]
     set settings [dict get $config -config]
-    foreach path [list $prefix $prefix/ $prefix/new $prefix/topic/test $prefix/_assets/editor.css] {
+    # Check concrete URLs already claimed inside the parameterized routes.
+    foreach path [list $prefix/topic/test $prefix/_assets/editor.css] {
         if {[dict get [$router match GET $path] statusCode] != 404} {error "forum prefix already handled"}
     }
-    foreach route [::web::forum::route_specs $prefix $config $settings] {
-        lassign $route method path handler
-        $router add $method $path $handler -strict true
-    }
+    set manifest [::web::core::manifest web-forum]
+    set plan [::web::core::route_plan $manifest $prefix $config $settings]
+    ::web::core::install $router $plan
     return $config
 }
 
@@ -111,7 +112,7 @@ proc ::web::forum::asset {request context params} {
     return $result
 }
 foreach module {storage http render} {source [file join $::web::forum::root library $module.tcl]}
-package provide web-forum 0.3.4
+package provide web-forum 1.0.0
 
 # Prepare the exact host/package composition without opening storage or mounting
 # routes. Production hosts may skip validation after checking their artifact.

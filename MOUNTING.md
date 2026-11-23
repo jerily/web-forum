@@ -10,16 +10,19 @@ Use the same account store and account mount for the forum. Initialize tables
 once through an explicit maintenance step before serving requests:
 
 ```tcl
-package require web-forum 0.2.0
+package require web-forum
 set router [::tpathexp::router]
-set accountStore [::web::user::create -connection $connection -config [dict create tenant mysite \
-    aead $aeadHandle mac $macHandle email_hash_salt $emailHashSalt]]
-::web::user::initdb $connection
+::web::user::initdb $connection $accountPolicy
 ::web::forum::initdb $connection
-set accounts [::web::user::mount $router -store $accountStore -config [dict create prefix /user origin https://community.example master_template $master]]
+set accountStore [::web::user::create -connection $connection -config $accountPolicy]
+set accounts [::web::user::mount $router -store $accountStore -config $accountSettings]
 set forum [::web::forum::mount $router -store $accountStore -user $accounts \
     -config [dict create prefix /forum title Discussions master_template $master]]
 ```
+
+Use the host's account policy for `$accountPolicy`, including the SQL dialect,
+tenant, registered key handles, and email hash salt. Supply the account origin,
+prefix, layout, and email settings in `$accountSettings`.
 
 `$connection` is an autocommit tpersist connection (`-autobegin 0`). The account
 store selects the tenant; forum queries use that same tenant. Each worker owns

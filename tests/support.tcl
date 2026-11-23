@@ -1,14 +1,14 @@
 package require tcltest
-package require web-forum 0.3.1
+package require web-forum 1.0.0
 namespace import ::tcltest::*
 namespace eval ::modtest {}
 proc ::modtest::setup {{settings {}}} {
     set ::env(ENV) LOCAL
-    variable db [::web::user::connect {sqlite_path :memory:}]
-    ::web::user::initdb $db
+    variable db [::web::user::connect {db_dialect sqlite sqlite_path :memory:}]
+    ::web::user::initdb $db {db_dialect sqlite}
     ::web::forum::initdb $db
     variable handles [list [tink::register_keyset [tink::aead::create_keyset AES256_GCM]] [tink::register_keyset [tink::mac::create_keyset HMAC_SHA256]]]
-    variable store [::web::user::create -connection $db -config [dict create tenant forum-tests aead [lindex $handles 0] mac [lindex $handles 1] email_hash_salt test-salt challenge_limit 100]]
+    variable store [::web::user::create -connection $db -config [dict create db_dialect sqlite require_https_origin false secure_cookies false require_email_delivery false aws_email_enabled false tenant forum-tests aead [lindex $handles 0] mac [lindex $handles 1] email_hash_salt test-salt challenge_limit 100]]
     variable router [::tpathexp::router]
     variable auth [::web::user::mount $router -store $store -config {origin http://localhost:8080}]
     ::web::forum::mount $router -store $store -user $auth -config [dict merge {page_size 2 post_limit 100} $settings]
